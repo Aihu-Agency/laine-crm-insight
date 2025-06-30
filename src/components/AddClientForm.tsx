@@ -70,7 +70,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
           <CardContent className="space-y-8">
             {/* Basic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Basic Information</h3>
+              <div className="bg-laine-mint/10 border border-laine-mint/30 rounded-lg p-4">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Basic Information</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
@@ -133,7 +135,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
 
             {/* Purchase Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Purchase Information</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Purchase Information</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="timeOfPurchase">Time of Purchase</Label>
@@ -186,7 +190,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
 
             {/* Property Preferences */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Property Preferences</h3>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Property Preferences</h3>
+              </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="areasOfInterest">Areas of Interest</Label>
@@ -249,7 +255,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
 
             {/* Additional Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Additional Information</h3>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Additional Information</h3>
+              </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="mustHave">Must Have</Label>
@@ -294,7 +302,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
 
             {/* Next Action */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Next Action</h3>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Next Action</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Next Action Date</Label>
