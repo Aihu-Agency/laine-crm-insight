@@ -10,9 +10,17 @@ const Index = () => {
     setIsLoggedIn(true);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
   return (
     <div>
-      {isLoggedIn ? <Dashboard /> : <LoginPage onLogin={handleLogin} />}
+      {isLoggedIn ? (
+        <Dashboard onLogout={handleLogout} />
+      ) : (
+        <LoginPage onLogin={handleLogin} />
+      )}
     </div>
   );
 };

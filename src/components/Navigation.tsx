@@ -1,14 +1,24 @@
 
 import { Button } from "@/components/ui/button";
 
-const Navigation = () => {
+interface NavigationProps {
+  onLogout?: () => void;
+}
+
+const Navigation = ({ onLogout }: NavigationProps) => {
+  const handleSettingsClick = () => {
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
   const navItems = [
-    { name: "Dashboard", active: true },
-    { name: "Sales Funnel", active: false },
-    { name: "Customers", active: false },
-    { name: "Rental", active: false },
-    { name: "ToDo", active: false },
-    { name: "Settings", active: false },
+    { name: "Dashboard", active: true, onClick: undefined },
+    { name: "Sales Funnel", active: false, onClick: undefined },
+    { name: "Customers", active: false, onClick: undefined },
+    { name: "Rental", active: false, onClick: undefined },
+    { name: "ToDo", active: false, onClick: undefined },
+    { name: "Settings", active: false, onClick: handleSettingsClick },
   ];
 
   return (
@@ -31,6 +41,7 @@ const Navigation = () => {
                   ? "bg-primary text-white" 
                   : "text-gray-600 hover:text-primary hover:bg-laine-grey"
               }`}
+              onClick={item.onClick}
             >
               {item.name}
             </Button>
