@@ -6,11 +6,13 @@ import Dashboard from "@/components/Dashboard";
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // For demo purposes, we'll show the Dashboard by default
-  // In production, this would be controlled by actual authentication
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
   return (
     <div>
-      {isLoggedIn ? <Dashboard /> : <Dashboard />}
+      {isLoggedIn ? <Dashboard /> : <LoginPage onLogin={handleLogin} />}
     </div>
   );
 };
