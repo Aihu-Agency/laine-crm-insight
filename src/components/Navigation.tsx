@@ -24,14 +24,12 @@ const Navigation = ({ onLogout }: NavigationProps) => {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-8">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-xl font-bold text-primary">Laine Homes</h1>
-            <span className="text-sm text-muted-foreground">CRM</span>
-          </div>
+        <div className="flex items-center space-x-3">
+          <h1 className="text-xl font-bold text-primary">Laine Homes</h1>
+          <span className="text-sm text-muted-foreground">CRM</span>
         </div>
         
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center justify-center flex-1 space-x-6">
           {navItems.map((item) => (
             <Button
               key={item.name}
@@ -47,6 +45,8 @@ const Navigation = ({ onLogout }: NavigationProps) => {
             </Button>
           ))}
         </div>
+        
+        <div className="w-24"></div>
       </div>
     </nav>
   );
