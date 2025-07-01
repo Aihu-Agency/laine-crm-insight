@@ -1,11 +1,15 @@
 
 import { Button } from "@/components/ui/button";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface NavigationProps {
   onLogout?: () => void;
 }
 
 const Navigation = ({ onLogout }: NavigationProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const handleSettingsClick = () => {
     if (onLogout) {
       onLogout();
@@ -13,13 +17,21 @@ const Navigation = ({ onLogout }: NavigationProps) => {
   };
 
   const navItems = [
-    { name: "Dashboard", active: true, onClick: undefined },
-    { name: "Sales Funnel", active: false, onClick: undefined },
-    { name: "Customers", active: false, onClick: undefined },
-    { name: "Rental", active: false, onClick: undefined },
-    { name: "ToDo", active: false, onClick: undefined },
-    { name: "Settings", active: false, onClick: handleSettingsClick },
+    { name: "Dashboard", path: "/", active: location.pathname === "/" },
+    { name: "Sales Funnel", path: "/sales-funnel", active: location.pathname === "/sales-funnel" },
+    { name: "Customers", path: "/customers", active: location.pathname === "/customers" },
+    { name: "Rental", path: "/rental", active: location.pathname === "/rental" },
+    { name: "ToDo", path: "/todo", active: location.pathname === "/todo" },
+    { name: "Settings", path: "/settings", active: false, onClick: handleSettingsClick },
   ];
+
+  const handleNavClick = (item: typeof navItems[0]) => {
+    if (item.onClick) {
+      item.onClick();
+    } else {
+      navigate(item.path);
+    }
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
@@ -39,7 +51,7 @@ const Navigation = ({ onLogout }: NavigationProps) => {
                   ? "bg-primary text-white" 
                   : "text-gray-600 hover:text-primary hover:bg-laine-grey"
               }`}
-              onClick={item.onClick}
+              onClick={() => handleNavClick(item)}
             >
               {item.name}
             </Button>
