@@ -162,12 +162,12 @@ const CustomerList = () => {
     <div className="space-y-4">
       {/* Column Headers */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4 px-4 py-2 bg-gray-50 rounded-lg border">
-        <div className="font-semibold text-gray-700 text-sm">Name</div>
-        <div className="font-semibold text-gray-700 text-sm">Phase</div>
-        <div className="font-semibold text-gray-700 text-sm">Location</div>
-        <div className="font-semibold text-gray-700 text-sm">Budget</div>
-        <div className="font-semibold text-gray-700 text-sm">Salesperson</div>
-        <div className="font-semibold text-gray-700 text-sm">Last Contacted</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Name</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Phase</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Location</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Budget</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Salesperson</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Last Contacted</div>
       </div>
 
       {customers.map((customer) => (
