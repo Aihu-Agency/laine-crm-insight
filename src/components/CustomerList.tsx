@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye } from "lucide-react";
@@ -162,51 +161,52 @@ const CustomerList = () => {
   return (
     <div className="space-y-4">
       {/* Column Headers */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg border">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 bg-gray-50 rounded-lg border">
         <div className="font-semibold text-gray-700 text-sm text-left">Name</div>
         <div className="font-semibold text-gray-700 text-sm text-left">Phase</div>
         <div className="font-semibold text-gray-700 text-sm text-left">Location</div>
         <div className="font-semibold text-gray-700 text-sm text-left">Budget</div>
         <div className="font-semibold text-gray-700 text-sm text-left">Salesperson</div>
         <div className="font-semibold text-gray-700 text-sm text-left">Last Contacted</div>
+        <div className="font-semibold text-gray-700 text-sm text-left">Actions</div>
       </div>
 
       {customers.map((customer) => (
         <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                <div className="font-medium text-gray-800">
-                  {customer.fullName}
-                </div>
-                
-                <div>
-                  <span className={`px-2 py-1 rounded border text-xs font-medium ${getPhaseColor(customer.phase)}`}>
-                    {customer.phase}
-                  </span>
-                </div>
-                
-                <div className="text-sm text-gray-600">
-                  {customer.location}
-                </div>
-                
-                <div className="text-sm text-gray-600">
-                  {customer.budgetRange}
-                </div>
-                
-                <div className="text-sm text-gray-600">
-                  {customer.salesperson}
-                </div>
-                
-                <div className="text-sm text-gray-500">
-                  {customer.lastContact}
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
+              <div className="font-medium text-gray-800">
+                {customer.fullName}
               </div>
               
-              <Button variant="outline" size="sm" className="ml-4">
-                <Eye className="w-4 h-4 mr-1" />
-                View
-              </Button>
+              <div>
+                <span className={`px-2 py-1 rounded border text-xs font-medium ${getPhaseColor(customer.phase)}`}>
+                  {customer.phase}
+                </span>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                {customer.location}
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                {customer.budgetRange}
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                {customer.salesperson}
+              </div>
+              
+              <div className="text-sm text-gray-500">
+                {customer.lastContact}
+              </div>
+              
+              <div className="flex justify-start">
+                <Button variant="outline" size="sm">
+                  <Eye className="w-4 h-4 mr-1" />
+                  View
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
