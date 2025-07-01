@@ -3,26 +3,19 @@ import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   onLogout?: () => void;
-  onNavigate?: (page: string) => void;
 }
 
-const Navigation = ({ onLogout, onNavigate }: NavigationProps) => {
+const Navigation = ({ onLogout }: NavigationProps) => {
   const handleSettingsClick = () => {
     if (onLogout) {
       onLogout();
     }
   };
 
-  const handleNavigation = (page: string) => {
-    if (onNavigate) {
-      onNavigate(page);
-    }
-  };
-
   const navItems = [
-    { name: "Dashboard", active: false, onClick: () => handleNavigation("dashboard") },
+    { name: "Dashboard", active: true, onClick: undefined },
     { name: "Sales Funnel", active: false, onClick: undefined },
-    { name: "Customers", active: false, onClick: () => handleNavigation("customers") },
+    { name: "Customers", active: false, onClick: undefined },
     { name: "Rental", active: false, onClick: undefined },
     { name: "ToDo", active: false, onClick: undefined },
     { name: "Settings", active: false, onClick: handleSettingsClick },
@@ -31,12 +24,14 @@ const Navigation = ({ onLogout, onNavigate }: NavigationProps) => {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-xl font-bold text-primary">Laine Homes</h1>
-          <span className="text-sm text-muted-foreground">CRM</span>
+        <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-xl font-bold text-primary">Laine Homes</h1>
+            <span className="text-sm text-muted-foreground">CRM</span>
+          </div>
         </div>
         
-        <div className="flex items-center justify-center flex-1 space-x-6">
+        <div className="flex items-center space-x-6">
           {navItems.map((item) => (
             <Button
               key={item.name}
@@ -52,8 +47,6 @@ const Navigation = ({ onLogout, onNavigate }: NavigationProps) => {
             </Button>
           ))}
         </div>
-        
-        <div className="w-24"></div>
       </div>
     </nav>
   );
