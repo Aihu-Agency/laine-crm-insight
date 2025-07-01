@@ -3,19 +3,26 @@ import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   onLogout?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const Navigation = ({ onLogout }: NavigationProps) => {
+const Navigation = ({ onLogout, onNavigate }: NavigationProps) => {
   const handleSettingsClick = () => {
     if (onLogout) {
       onLogout();
     }
   };
 
+  const handleNavigation = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
+    }
+  };
+
   const navItems = [
-    { name: "Dashboard", active: true, onClick: undefined },
+    { name: "Dashboard", active: false, onClick: () => handleNavigation("dashboard") },
     { name: "Sales Funnel", active: false, onClick: undefined },
-    { name: "Customers", active: false, onClick: undefined },
+    { name: "Customers", active: false, onClick: () => handleNavigation("customers") },
     { name: "Rental", active: false, onClick: undefined },
     { name: "ToDo", active: false, onClick: undefined },
     { name: "Settings", active: false, onClick: handleSettingsClick },

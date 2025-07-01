@@ -1,311 +1,105 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Navigation from "./Navigation";
-import AddClientForm from "./AddClientForm";
-import ClientSavedOverlay from "./ClientSavedOverlay";
+import React, { useState } from 'react';
+import Navigation from "@/components/Navigation";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface DashboardProps {
   onLogout?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const Dashboard = ({ onLogout }: DashboardProps) => {
-  const [showMoreActions, setShowMoreActions] = useState(false);
-  const [showAddClientForm, setShowAddClientForm] = useState(false);
-  const [showSavedOverlay, setShowSavedOverlay] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    areaOfInterest: ""
-  });
+const Dashboard = ({ onLogout, onNavigate }: DashboardProps) => {
+  const [tasks, setTasks] = useState([
+    { id: 1, title: "Follow up with John", completed: false },
+    { id: 2, title: "Send proposal to Acme Corp", completed: true },
+    { id: 3, title: "Schedule meeting with Jane", completed: false },
+  ]);
 
-  const initialActionRequiredCustomers = [
-    {
-      name: "Mikko Tuominen",
-      action: "Call 14.7.2025",
-      priority: "high" as const
-    },
-    {
-      name: "Otso Lindfors", 
-      action: "Email 15.7.2025",
-      priority: "medium" as const
-    },
-    {
-      name: "Tiina Källi",
-      action: "Contact in July",
-      priority: "low" as const
-    },
-    {
-      name: "Tommi Perälä",
-      action: "Call 14.7.2025 at 13:00",
-      priority: "high" as const
-    },
-    {
-      name: "Tiina Källi",
-      action: "Not contacted in 3 months",
-      priority: "medium" as const
-    }
-  ];
-
-  const additionalActionRequiredCustomers = [
-    {
-      name: "Marja Virtanen",
-      action: "Schedule meeting 16.7.2025",
-      priority: "high" as const
-    },
-    {
-      name: "Jukka Nieminen",
-      action: "Send property list",
-      priority: "medium" as const
-    },
-    {
-      name: "Anna Korhonen",
-      action: "Follow up on proposal",
-      priority: "high" as const
-    },
-    {
-      name: "Petri Hakala",
-      action: "Call 17.7.2025",
-      priority: "low" as const
-    },
-    {
-      name: "Sari Laakso",
-      action: "Email property details",
-      priority: "medium" as const
-    },
-    {
-      name: "Markus Rantala",
-      action: "Schedule viewing",
-      priority: "high" as const
-    },
-    {
-      name: "Liisa Mäkinen",
-      action: "Not contacted in 2 months",
-      priority: "medium" as const
-    },
-    {
-      name: "Tero Jokinen",
-      action: "Call 18.7.2025 at 10:00",
-      priority: "low" as const
-    },
-    {
-      name: "Kirsi Salonen",
-      action: "Send contract draft",
-      priority: "high" as const
-    },
-    {
-      name: "Ville Heikkinen",
-      action: "Follow up on financing",
-      priority: "medium" as const
-    }
-  ];
-
-  const newProperties = [
-    {
-      name: "Mikko Tuominen",
-      count: "2 new properties"
-    },
-    {
-      name: "Otso Lindfors",
-      count: "2 new properties"
-    },
-    {
-      name: "Tiina Källi",
-      count: "1 new properties"
-    },
-    {
-      name: "Tommi Perälä",
-      count: "1 new properties"
-    }
-  ];
-
-  const actionRequiredCustomers = showMoreActions 
-    ? [...initialActionRequiredCustomers, ...additionalActionRequiredCustomers]
-    : initialActionRequiredCustomers;
-
-  const handleShowMore = () => {
-    setShowMoreActions(true);
-  };
-
-  const getPriorityStyles = (priority: "high" | "medium" | "low") => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-50 border-l-4 border-red-400';
-      case 'medium':
-        return 'bg-yellow-50 border-l-4 border-yellow-400';
-      case 'low':
-        return 'bg-laine-blue border-l-4 border-blue-400';
-      default:
-        return 'bg-laine-blue border-l-4 border-blue-400';
-    }
-  };
-
-  const handleContinue = () => {
-    // Get form values
-    const firstNameInput = document.getElementById('customer-firstname') as HTMLInputElement;
-    const lastNameInput = document.getElementById('customer-lastname') as HTMLInputElement;
-    const areaInput = document.getElementById('area-interest') as HTMLInputElement;
-    
-    setFormData({
-      firstName: firstNameInput?.value || "",
-      lastName: lastNameInput?.value || "",
-      areaOfInterest: areaInput?.value || ""
-    });
-    
-    setShowAddClientForm(true);
-  };
-
-  const handleSaveClient = () => {
-    setShowAddClientForm(false);
-    setShowSavedOverlay(true);
-  };
-
-  const handleCancelClient = () => {
-    setShowAddClientForm(false);
-  };
-
-  const handleBackToDashboard = () => {
-    setShowSavedOverlay(false);
-    // Reset form data
-    setFormData({
-      firstName: "",
-      lastName: "",
-      areaOfInterest: ""
-    });
-    // Clear form inputs
-    const firstNameInput = document.getElementById('customer-firstname') as HTMLInputElement;
-    const lastNameInput = document.getElementById('customer-lastname') as HTMLInputElement;
-    const areaInput = document.getElementById('area-interest') as HTMLInputElement;
-    
-    if (firstNameInput) firstNameInput.value = "";
-    if (lastNameInput) lastNameInput.value = "";
-    if (areaInput) areaInput.value = "";
-  };
-
-  if (showAddClientForm) {
-    return (
-      <AddClientForm 
-        onSave={handleSaveClient}
-        onCancel={handleCancelClient}
-        initialData={formData}
-      />
+  const toggleTask = (id: number) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
     );
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-laine-grey">
-      <Navigation onLogout={onLogout} />
+    <div className="min-h-screen bg-gray-50">
+      <Navigation onLogout={onLogout} onNavigate={onNavigate} />
       
-      <div className="container mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - 70% */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* AI-suggested properties section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800">
-                  New properties available
-                </CardTitle>
-              </CardHeader>
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Quick Actions */}
+            <Card className="laine-card">
               <CardContent>
-                <div className="space-y-3">
-                  {newProperties.map((item, index) => (
-                    <div 
-                      key={index} 
-                      className="flex justify-between items-center py-3 px-4 bg-laine-beige rounded-lg hover:bg-laine-beige/80 transition-colors duration-200 cursor-pointer"
-                    >
-                      <span className="font-medium text-gray-800">{item.name}</span>
-                      <span className="text-sm text-gray-600">{item.count}</span>
-                    </div>
-                  ))}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
                 </div>
+                <ul className="space-y-3">
+                  <li>
+                    <a href="#" className="block hover:bg-gray-100 rounded-md p-2">Create New Customer</a>
+                  </li>
+                  <li>
+                    <a href="#" className="block hover:bg-gray-100 rounded-md p-2">Add New Task</a>
+                  </li>
+                  <li>
+                    <a href="#" className="block hover:bg-gray-100 rounded-md p-2">View Sales Report</a>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
 
-            {/* Customers needing action */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800">
-                  Action required
-                </CardTitle>
-              </CardHeader>
+            {/* Upcoming Events */}
+            <Card className="laine-card">
               <CardContent>
-                <div className="space-y-3">
-                  {actionRequiredCustomers.map((customer, index) => (
-                    <div 
-                      key={index} 
-                      className={`flex justify-between items-center py-3 px-4 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md hover:scale-[1.01] ${getPriorityStyles(customer.priority)}`}
-                    >
-                      <span className="font-medium text-gray-800">{customer.name}</span>
-                      <span className="text-sm text-gray-600">{customer.action}</span>
-                    </div>
-                  ))}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Upcoming Events</h2>
                 </div>
-                {!showMoreActions && (
-                  <div className="mt-4 text-center">
-                    <Button 
-                      variant="outline" 
-                      className="text-primary border-primary hover:bg-primary/10"
-                      onClick={handleShowMore}
-                    >
-                      Show more
-                    </Button>
-                  </div>
-                )}
+                <ul className="space-y-3">
+                  <li>
+                    <div className="flex items-center justify-between">
+                      <span>Meeting with Acme Corp</span>
+                      <span className="text-sm text-gray-500">Tomorrow, 10:00 AM</span>
+                    </div>
+                  </li>
+                  <li>
+                    <div className="flex items-center justify-between">
+                      <span>Call with John Doe</span>
+                      <span className="text-sm text-gray-500">Wednesday, 2:00 PM</span>
+                    </div>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Right Column - 30% */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-gray-800 mb-4">
-                  Add new customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customer-firstname">Customer First Name</Label>
-                  <Input 
-                    id="customer-firstname" 
-                    placeholder="Enter first name"
-                    className="w-full"
-                  />
+            {/* To-Do List */}
+            <Card className="laine-card">
+              <CardContent>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">To-Do List</h2>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customer-lastname">Customer Last Name</Label>
-                  <Input 
-                    id="customer-lastname" 
-                    placeholder="Enter last name"
-                    className="w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="area-interest">Area of interest</Label>
-                  <Input 
-                    id="area-interest" 
-                    placeholder="Enter area"
-                    className="w-full"
-                  />
-                </div>
-                <Button 
-                  className="w-full bg-laine-mint hover:bg-laine-mint/90 text-gray-800 border-0"
-                  onClick={handleContinue}
-                >
-                  Continue
-                </Button>
+                <ul className="space-y-3">
+                  {tasks.map((task) => (
+                    <li key={task.id}>
+                      <label className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-5 w-5 text-primary rounded"
+                          checked={task.completed}
+                          onChange={() => toggleTask(task.id)}
+                        />
+                        <span>{task.title}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
-      {showSavedOverlay && (
-        <ClientSavedOverlay onBackToDashboard={handleBackToDashboard} />
-      )}
     </div>
   );
 };
