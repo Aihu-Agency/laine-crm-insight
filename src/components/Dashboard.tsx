@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navigation from "./Navigation";
+import AddClientForm from "./AddClientForm";
+import ClientSavedOverlay from "./ClientSavedOverlay";
 
 interface DashboardProps {
   onLogout?: () => void;
@@ -12,6 +13,13 @@ interface DashboardProps {
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [showAddClientForm, setShowAddClientForm] = useState(false);
+  const [showSavedOverlay, setShowSavedOverlay] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    areaOfInterest: ""
+  });
 
   const initialActionRequiredCustomers = [
     {
@@ -134,6 +142,58 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     }
   };
 
+  const handleContinue = () => {
+    // Get form values
+    const firstNameInput = document.getElementById('customer-firstname') as HTMLInputElement;
+    const lastNameInput = document.getElementById('customer-lastname') as HTMLInputElement;
+    const areaInput = document.getElementById('area-interest') as HTMLInputElement;
+    
+    setFormData({
+      firstName: firstNameInput?.value || "",
+      lastName: lastNameInput?.value || "",
+      areaOfInterest: areaInput?.value || ""
+    });
+    
+    setShowAddClientForm(true);
+  };
+
+  const handleSaveClient = () => {
+    setShowAddClientForm(false);
+    setShowSavedOverlay(true);
+  };
+
+  const handleCancelClient = () => {
+    setShowAddClientForm(false);
+  };
+
+  const handleBackToDashboard = () => {
+    setShowSavedOverlay(false);
+    // Reset form data
+    setFormData({
+      firstName: "",
+      lastName: "",
+      areaOfInterest: ""
+    });
+    // Clear form inputs
+    const firstNameInput = document.getElementById('customer-firstname') as HTMLInputElement;
+    const lastNameInput = document.getElementById('customer-lastname') as HTMLInputElement;
+    const areaInput = document.getElementById('area-interest') as HTMLInputElement;
+    
+    if (firstNameInput) firstNameInput.value = "";
+    if (lastNameInput) lastNameInput.value = "";
+    if (areaInput) areaInput.value = "";
+  };
+
+  if (showAddClientForm) {
+    return (
+      <AddClientForm 
+        onSave={handleSaveClient}
+        onCancel={handleCancelClient}
+        initialData={formData}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-laine-grey">
       <Navigation onLogout={onLogout} />
@@ -231,7 +291,10 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     className="w-full"
                   />
                 </div>
-                <Button className="w-full bg-laine-mint hover:bg-laine-mint/90 text-gray-800 border-0">
+                <Button 
+                  className="w-full bg-laine-mint hover:bg-laine-mint/90 text-gray-800 border-0"
+                  onClick={handleContinue}
+                >
                   Continue
                 </Button>
               </CardContent>
@@ -239,6 +302,10 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
           </div>
         </div>
       </div>
+
+      {showSavedOverlay && (
+        <ClientSavedOverlay onBackToDashboard={handleBackToDashboard} />
+      )}
     </div>
   );
 };
