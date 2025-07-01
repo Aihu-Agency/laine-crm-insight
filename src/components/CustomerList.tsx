@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye } from "lucide-react";
@@ -161,6 +160,16 @@ const CustomerList = () => {
 
   return (
     <div className="space-y-4">
+      {/* Column Headers */}
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 px-4 py-2 bg-gray-50 rounded-lg border">
+        <div className="font-semibold text-gray-700 text-sm">Name</div>
+        <div className="font-semibold text-gray-700 text-sm">Phase</div>
+        <div className="font-semibold text-gray-700 text-sm">Location</div>
+        <div className="font-semibold text-gray-700 text-sm">Budget</div>
+        <div className="font-semibold text-gray-700 text-sm">Salesperson</div>
+        <div className="font-semibold text-gray-700 text-sm">Last Contacted</div>
+      </div>
+
       {customers.map((customer) => (
         <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
