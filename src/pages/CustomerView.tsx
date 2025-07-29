@@ -149,12 +149,27 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
     const [firstName, ...lastNameParts] = customer?.fullName.split(" ") || [];
     const lastName = lastNameParts.join(" ");
     
+    // Convert property types and bedroom/bathroom arrays to match form format
+    const propertyTypes = customer?.propertyType || [];
+    const bedroomOptions = customer?.bedrooms?.map(num => num.toString()) || [];
+    const bathroomOptions = customer?.bathrooms?.map(num => num.toString()) || [];
+    
     navigate("/customers/add", {
       state: {
         initialData: {
           firstName: firstName || "",
           lastName: lastName || "",
-          areaOfInterest: customer?.location || "",
+          email: customer?.email || "",
+          phone: customer?.phone || "",
+          areaOfInterest: customer?.preferredAreas?.join(", ") || customer?.location || "",
+          propertyTypes: propertyTypes,
+          bedrooms: bedroomOptions,
+          bathrooms: bathroomOptions,
+          minPrice: customer?.budget?.min,
+          maxPrice: customer?.budget?.max,
+          notes: customer?.notes || "",
+          nextAction: customer?.nextAction || "",
+          nextActionDate: customer?.nextActionDate || "",
         }
       }
     });

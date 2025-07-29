@@ -20,15 +20,27 @@ interface AddClientFormProps {
   initialData?: {
     firstName?: string;
     lastName?: string;
+    email?: string;
+    phone?: string;
     areaOfInterest?: string;
+    propertyTypes?: string[];
+    bedrooms?: string[];
+    bathrooms?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    notes?: string;
+    nextAction?: string;
+    nextActionDate?: string;
   };
 }
 
 const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) => {
-  const [nextActionDate, setNextActionDate] = useState<Date>();
-  const [apartmentTypes, setApartmentTypes] = useState<string[]>([]);
-  const [bedrooms, setBedrooms] = useState<string[]>([]);
-  const [bathrooms, setBathrooms] = useState<string[]>([]);
+  const [nextActionDate, setNextActionDate] = useState<Date>(
+    initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
+  );
+  const [apartmentTypes, setApartmentTypes] = useState<string[]>(initialData?.propertyTypes || []);
+  const [bedrooms, setBedrooms] = useState<string[]>(initialData?.bedrooms || []);
+  const [bathrooms, setBathrooms] = useState<string[]>(initialData?.bathrooms || []);
 
   const handleApartmentTypeChange = (type: string, checked: boolean) => {
     if (checked) {
@@ -95,6 +107,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Input 
                     id="email" 
                     type="email" 
+                    defaultValue={initialData?.email || ""}
                     placeholder="Enter email address"
                   />
                 </div>
@@ -102,6 +115,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input 
                     id="phone" 
+                    defaultValue={initialData?.phone || ""}
                     placeholder="Enter phone number"
                   />
                 </div>
@@ -174,6 +188,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Input 
                     id="minPrice" 
                     type="number" 
+                    defaultValue={initialData?.minPrice?.toString() || ""}
                     placeholder="Minimum price"
                   />
                 </div>
@@ -182,6 +197,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Input 
                     id="maxPrice" 
                     type="number" 
+                    defaultValue={initialData?.maxPrice?.toString() || ""}
                     placeholder="Maximum price"
                   />
                 </div>
@@ -293,6 +309,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Label htmlFor="notes">Notes / Comments</Label>
                   <Textarea 
                     id="notes" 
+                    defaultValue={initialData?.notes || ""}
                     placeholder="Additional notes or comments"
                     rows={4}
                   />
@@ -336,6 +353,7 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
                   <Label htmlFor="nextActionNote">Next Action Note</Label>
                   <Input 
                     id="nextActionNote" 
+                    defaultValue={initialData?.nextAction || ""}
                     placeholder="Brief description of next action"
                   />
                 </div>
