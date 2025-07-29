@@ -142,7 +142,7 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
     if (customer?.nextActionDate) {
       setNextActionDate(new Date(customer.nextActionDate));
     }
-  }, [customer]);
+  }, [customer?.nextAction, customer?.nextActionDate]);
 
   const handleEditCustomer = () => {
     // Navigate to add customer page with pre-filled data
