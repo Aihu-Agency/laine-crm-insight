@@ -50,7 +50,6 @@ const CustomerCard = ({ customer, isDragging = false }: { customer: Customer; is
       className="mb-3 cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-200"
     >
       <div {...listeners} className="p-2 cursor-grab active:cursor-grabbing">
-        <div className="text-xs text-gray-400 mb-1">≡ Drag to move</div>
       </div>
       <CardContent className="p-4 pt-0" onClick={handleClick}>
         <div className="space-y-2">
