@@ -306,6 +306,14 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                     <label className="text-sm font-medium text-gray-600">Nationality</label>
                     <p className="text-gray-800">{customer.nationality || "Not provided"}</p>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Salesperson</label>
+                    <p className="text-gray-800">{customer.salesperson}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Last Contact</label>
+                    <p className="text-gray-800">{customer.lastContact}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -396,31 +404,6 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
 
           {/* Right column - Summary and actions */}
           <div className="space-y-6">
-            {/* Quick Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Salesperson:</span>
-                  <span className="font-medium">{customer.salesperson}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last Contact:</span>
-                  <span className="font-medium">{customer.lastContact}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Location:</span>
-                  <span className="font-medium">{customer.location}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Budget Range:</span>
-                  <span className="font-medium">{customer.budgetRange}</span>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Next Actions */}
             <Card>
               <CardHeader>
