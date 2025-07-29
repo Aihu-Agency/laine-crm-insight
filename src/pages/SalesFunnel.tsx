@@ -39,7 +39,7 @@ const CustomerCard = ({ customer, isDragging = false }: { customer: Customer; is
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/customers/${customer.id}`);
+    navigate(`/customers/${customer.id}?from=sales-funnel`);
   };
 
   return (
@@ -101,7 +101,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       id: 1,
       fullName: "Mikko Tuominen",
       phase: "0-3 mo",
-      location: "Marbella",
+      location: "Marbella, Fuengirola, Benalmádena",
       budgetRange: "€300k - €400k",
       salesperson: "Laura",
       lastContact: "2 days ago"

@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, MapPin, Calendar, Euro, User, Home, Heart, Clock, CalendarIcon } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,8 @@ interface CustomerData {
 const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromView = searchParams.get('from');
   
   // State for editing next action
   const [isEditingNextAction, setIsEditingNextAction] = useState(false);
@@ -156,6 +158,7 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
     
     navigate("/customers/add", {
       state: {
+        isEditing: true,
         initialData: {
           firstName: firstName || "",
           lastName: lastName || "",
@@ -204,6 +207,14 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
     setNewNote("");
   };
 
+  const handleBackClick = () => {
+    if (fromView === 'sales-funnel') {
+      navigate('/sales-funnel');
+    } else {
+      navigate('/customers');
+    }
+  };
+
   if (!customer) {
     return (
       <div className="min-h-screen bg-laine-grey">
@@ -213,9 +224,9 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
             <CardContent>
               <h2 className="text-xl font-semibold text-gray-800 mb-2">Customer Not Found</h2>
               <p className="text-gray-600 mb-4">The customer you're looking for doesn't exist.</p>
-              <Button onClick={() => navigate("/customers")} variant="outline">
+              <Button onClick={handleBackClick} variant="outline">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Customers
+                Back
               </Button>
             </CardContent>
           </Card>
@@ -240,12 +251,12 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Button 
-              onClick={() => navigate("/customers")} 
+              onClick={handleBackClick} 
               variant="outline" 
               size="sm"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Customers
+              Back
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{customer.fullName}</h1>
@@ -290,10 +301,6 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                   <div>
                     <label className="text-sm font-medium text-gray-600">Phone</label>
                     <p className="text-gray-800">{customer.phone || "Not provided"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Age</label>
-                    <p className="text-gray-800">{customer.age || "Not provided"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Nationality</label>
@@ -361,41 +368,25 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* Notes */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Notes</CardTitle>
-                  {!isAddingNote && (
-                    <Button onClick={handleAddNote} variant="outline" size="sm">
-                      Add notes
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-800 leading-relaxed mb-4">
-                  {customer.notes || "No notes available."}
-                </p>
-                
-                {isAddingNote && (
-                  <div className="space-y-3">
-                    <Textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Add your notes here..."
-                      className="min-h-[100px]"
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveNote} size="sm">
-                        Save
-                      </Button>
-                      <Button onClick={handleCancelNote} variant="outline" size="sm">
-                        Cancel
-                      </Button>
+                {/* Financial Details moved here */}
+                {customer.budget && (
+                  <div className="mt-6 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Euro className="w-5 h-5" />
+                      <h3 className="text-lg font-semibold">Financial Details</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Budget Range</label>
+                        <p className="text-gray-800">
+                          €{customer.budget.min.toLocaleString()} - €{customer.budget.max.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Financing</label>
+                        <p className="text-gray-800">{customer.budget.financing}</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -427,32 +418,6 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                   <span className="text-sm text-gray-600">Budget Range:</span>
                   <span className="font-medium">{customer.budgetRange}</span>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Financial Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Euro className="w-5 h-5" />
-                  Financial Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {customer.budget && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Budget:</span>
-                      <span className="font-medium">
-                        €{customer.budget.min.toLocaleString()} - €{customer.budget.max.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Financing:</span>
-                      <span className="font-medium">{customer.budget.financing}</span>
-                    </div>
-                  </>
-                )}
               </CardContent>
             </Card>
 
@@ -536,6 +501,44 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                 >
                   {isEditingNextAction ? "Save Next Action" : "Schedule Next Action"}
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Notes - moved below Next Actions */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Notes</CardTitle>
+                  {!isAddingNote && (
+                    <Button onClick={handleAddNote} variant="outline" size="sm">
+                      Add notes
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-800 leading-relaxed mb-4">
+                  {customer.notes || "No notes available."}
+                </p>
+                
+                {isAddingNote && (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add your notes here..."
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveNote} size="sm">
+                        Save
+                      </Button>
+                      <Button onClick={handleCancelNote} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

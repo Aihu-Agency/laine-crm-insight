@@ -15,12 +15,14 @@ import NotFound from "./pages/NotFound";
 const AddClientPage = () => {
   const location = useLocation();
   const initialData = location.state?.initialData;
+  const isEditing = location.state?.isEditing || false;
   
   return (
     <AddClientForm 
       onSave={() => window.history.back()} 
       onCancel={() => window.history.back()}
       initialData={initialData}
+      isEditing={isEditing}
     />
   );
 };

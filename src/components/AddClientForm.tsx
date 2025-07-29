@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +31,10 @@ interface AddClientFormProps {
     nextAction?: string;
     nextActionDate?: string;
   };
+  isEditing?: boolean;
 }
 
-const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) => {
+const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: AddClientFormProps) => {
   const [nextActionDate, setNextActionDate] = useState<Date>(
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
   );
@@ -77,7 +77,9 @@ const AddClientForm = ({ onSave, onCancel, initialData }: AddClientFormProps) =>
       <div className="container mx-auto p-6 max-w-4xl">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-gray-800">Add New Client</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-800">
+              {isEditing ? "Edit customer" : "Add New Client"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
             {/* Basic Information */}
