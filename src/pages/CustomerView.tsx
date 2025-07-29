@@ -1,9 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Calendar, Euro, User, Home, Heart, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Euro, User, Home, Heart, Clock, CalendarIcon } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface CustomerData {
   id: number;
@@ -44,6 +50,12 @@ interface CustomerData {
 const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  // State for editing next action
+  const [isEditingNextAction, setIsEditingNextAction] = useState(false);
+  const [nextActionText, setNextActionText] = useState("");
+  const [nextActionDate, setNextActionDate] = useState<Date | undefined>();
+  const [nextActionTime, setNextActionTime] = useState("");
 
   // Mock customer data - in a real app this would come from an API or state management
   const getCustomerData = (customerId: string): CustomerData | null => {
@@ -75,7 +87,7 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
           financing: "Cash purchase"
         },
         notes: "Very interested in sea view properties. Looking for investment opportunity with rental potential.",
-        nextAction: "Send property listings matching criteria",
+        nextAction: "Sovi kohteen esittelyn ajankohta",
         nextActionDate: "2024-01-15",
         tags: ["High Priority", "Investment", "Cash Buyer"]
       },
@@ -116,6 +128,44 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
   };
 
   const customer = id ? getCustomerData(id) : null;
+
+  // Initialize next action state when customer loads
+  useEffect(() => {
+    if (customer?.nextAction) {
+      setNextActionText(customer.nextAction);
+    }
+    if (customer?.nextActionDate) {
+      setNextActionDate(new Date(customer.nextActionDate));
+    }
+  }, [customer]);
+
+  const handleEditCustomer = () => {
+    // Navigate to add customer page with pre-filled data
+    const [firstName, ...lastNameParts] = customer?.fullName.split(" ") || [];
+    const lastName = lastNameParts.join(" ");
+    
+    navigate("/customers/add", {
+      state: {
+        initialData: {
+          firstName: firstName || "",
+          lastName: lastName || "",
+          areaOfInterest: customer?.location || "",
+        }
+      }
+    });
+  };
+
+  const handleScheduleNextAction = () => {
+    if (!isEditingNextAction) {
+      setIsEditingNextAction(true);
+      setNextActionText(customer?.nextAction || "");
+      setNextActionDate(customer?.nextActionDate ? new Date(customer.nextActionDate) : undefined);
+      setNextActionTime("");
+    } else {
+      // Save logic would go here
+      setIsEditingNextAction(false);
+    }
+  };
 
   if (!customer) {
     return (
@@ -176,15 +226,7 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline">
-              <Phone className="w-4 h-4 mr-2" />
-              Call
-            </Button>
-            <Button variant="outline">
-              <Mail className="w-4 h-4 mr-2" />
-              Email
-            </Button>
-            <Button>
+            <Button onClick={handleEditCustomer}>
               Edit Customer
             </Button>
           </div>
@@ -219,17 +261,6 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                   <div>
                     <label className="text-sm font-medium text-gray-600">Nationality</label>
                     <p className="text-gray-800">{customer.nationality || "Not provided"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Occupation</label>
-                    <p className="text-gray-800">{customer.occupation || "Not provided"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Family Status</label>
-                    <p className="text-gray-800">
-                      {customer.familyStatus || "Not provided"}
-                      {customer.children ? ` (${customer.children} children)` : ""}
-                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -373,19 +404,74 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
               <CardContent className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Next Action</label>
-                  <p className="text-gray-800 mt-1">{customer.nextAction || "No action planned"}</p>
+                  {isEditingNextAction ? (
+                    <Input
+                      value={nextActionText}
+                      onChange={(e) => setNextActionText(e.target.value)}
+                      placeholder="Enter next action..."
+                      className="mt-1"
+                    />
+                  ) : (
+                    <p className="text-gray-800 mt-1">{customer.nextAction || "No action planned"}</p>
+                  )}
                 </div>
-                {customer.nextActionDate && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Due Date</label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-800">{customer.nextActionDate}</span>
+                
+                {isEditingNextAction ? (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Due Date</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal mt-1",
+                              !nextActionDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={nextActionDate}
+                            onSelect={setNextActionDate}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                  </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Time</label>
+                      <Input
+                        type="time"
+                        value={nextActionTime}
+                        onChange={(e) => setNextActionTime(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  customer.nextActionDate && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Due Date</label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-800">{customer.nextActionDate}</span>
+                      </div>
+                    </div>
+                  )
                 )}
-                <Button className="w-full mt-4">
-                  Schedule Next Action
+                
+                <Button 
+                  className="w-full mt-4" 
+                  onClick={handleScheduleNextAction}
+                >
+                  {isEditingNextAction ? "Save Next Action" : "Schedule Next Action"}
                 </Button>
               </CardContent>
             </Card>
