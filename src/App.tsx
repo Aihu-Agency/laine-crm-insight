@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./components/Dashboard";
 import Customers from "./pages/Customers";
 import CustomerView from "./pages/CustomerView";
+import SalesFunnel from "./pages/SalesFunnel";
 import AddClientForm from "./components/AddClientForm";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/add" element={<AddClientPage />} />
           <Route path="/customers/:id" element={<CustomerView />} />
+          <Route path="/sales-funnel" element={<SalesFunnel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
