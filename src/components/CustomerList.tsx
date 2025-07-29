@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Customer {
   id: number;
@@ -13,6 +14,7 @@ interface Customer {
 }
 
 const CustomerList = () => {
+  const navigate = useNavigate();
   const customers: Customer[] = [
     {
       id: 1,
@@ -202,7 +204,11 @@ const CustomerList = () => {
               </div>
               
               <div className="flex justify-start">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate(`/customers/${customer.id}`)}
+                >
                   <Eye className="w-4 h-4 mr-1" />
                   View
                 </Button>
