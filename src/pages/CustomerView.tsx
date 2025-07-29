@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -56,6 +57,10 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
   const [nextActionText, setNextActionText] = useState("");
   const [nextActionDate, setNextActionDate] = useState<Date | undefined>();
   const [nextActionTime, setNextActionTime] = useState("");
+  
+  // State for adding notes
+  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [newNote, setNewNote] = useState("");
 
   // Mock customer data - in a real app this would come from an API or state management
   const getCustomerData = (customerId: string): CustomerData | null => {
@@ -165,6 +170,23 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
       // Save logic would go here
       setIsEditingNextAction(false);
     }
+  };
+
+  const handleAddNote = () => {
+    setIsAddingNote(true);
+    setNewNote("");
+  };
+
+  const handleSaveNote = () => {
+    // Save logic would go here - in a real app, this would update the customer data
+    console.log("Saving note:", newNote);
+    setIsAddingNote(false);
+    setNewNote("");
+  };
+
+  const handleCancelNote = () => {
+    setIsAddingNote(false);
+    setNewNote("");
   };
 
   if (!customer) {
@@ -330,12 +352,38 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
             {/* Notes */}
             <Card>
               <CardHeader>
-                <CardTitle>Notes</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Notes</CardTitle>
+                  {!isAddingNote && (
+                    <Button onClick={handleAddNote} variant="outline" size="sm">
+                      Add notes
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-800 leading-relaxed">
+                <p className="text-gray-800 leading-relaxed mb-4">
                   {customer.notes || "No notes available."}
                 </p>
+                
+                {isAddingNote && (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      placeholder="Add your notes here..."
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveNote} size="sm">
+                        Save
+                      </Button>
+                      <Button onClick={handleCancelNote} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
