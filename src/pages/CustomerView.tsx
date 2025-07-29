@@ -28,6 +28,8 @@ interface CustomerData {
   occupation?: string;
   familyStatus?: string;
   children?: number;
+  customerType?: string; // e.g., "Buyer", "Seller", "Renter"
+  customerCategory?: string; // e.g., "Investor", "End User", "Developer"
   // Property preferences
   propertyType?: string[];
   bedrooms?: number[];
@@ -82,6 +84,8 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
         occupation: "Software Engineer",
         familyStatus: "Married",
         children: 2,
+        customerType: "Buyer",
+        customerCategory: "Investor",
         propertyType: ["Apartment", "Villa"],
         bedrooms: [2, 3],
         bathrooms: [2, 3],
@@ -113,6 +117,8 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
         occupation: "Marketing Manager",
         familyStatus: "Single",
         children: 0,
+        customerType: "Buyer",
+        customerCategory: "End User",
         propertyType: ["Apartment"],
         bedrooms: [1, 2],
         bathrooms: [1, 2],
@@ -305,6 +311,14 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                   <div>
                     <label className="text-sm font-medium text-gray-600">Nationality</label>
                     <p className="text-gray-800">{customer.nationality || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Customer Type</label>
+                    <p className="text-gray-800">{customer.customerType || "Not specified"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Customer Category</label>
+                    <p className="text-gray-800">{customer.customerCategory || "Not specified"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Salesperson</label>

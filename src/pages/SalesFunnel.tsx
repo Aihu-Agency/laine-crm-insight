@@ -71,9 +71,11 @@ const PhaseColumn = ({ phase, customers, title }: { phase: string; customers: Cu
   const phaseCustomers = customers.filter(customer => customer.phase === phase);
 
   const getPhaseColor = (phase: string) => {
+    if (phase === "Property shown") return "bg-green-100 border-green-300";
     if (phase.includes("0-3")) return "bg-red-100 border-red-300";
     if (phase.includes("3-6")) return "bg-yellow-100 border-yellow-300";
     if (phase.includes("6-12")) return "bg-blue-100 border-blue-300";
+    if (phase === "Later") return "bg-gray-100 border-gray-300";
     return "bg-gray-100 border-gray-300";
   };
 
@@ -97,6 +99,35 @@ const PhaseColumn = ({ phase, customers, title }: { phase: string; customers: Cu
 
 const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const [customers, setCustomers] = useState<Customer[]>([
+    // Property shown customers
+    {
+      id: 16,
+      fullName: "Jaakko Virtanen",
+      phase: "Property shown",
+      location: "Marbella",
+      budgetRange: "€450k - €550k",
+      salesperson: "Laura",
+      lastContact: "Today"
+    },
+    {
+      id: 17,
+      fullName: "Hanna Leppänen",
+      phase: "Property shown",
+      location: "Estepona",
+      budgetRange: "€280k - €380k",
+      salesperson: "Anna",
+      lastContact: "Yesterday"
+    },
+    {
+      id: 18,
+      fullName: "Risto Mäkelä",
+      phase: "Property shown",
+      location: "Fuengirola",
+      budgetRange: "€320k - €420k",
+      salesperson: "Mikko",
+      lastContact: "2 days ago"
+    },
+    // Existing customers
     {
       id: 1,
       fullName: "Mikko Tuominen",
@@ -181,7 +212,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     {
       id: 10,
       fullName: "Marja Virtanen",
-      phase: "12+ mo",
+      phase: "Later",
       location: "Fuengirola",
       budgetRange: "€450k - €550k",
       salesperson: "Sari",
@@ -237,10 +268,11 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const phases = [
+    { key: "Property shown", title: "Property Shown" },
     { key: "0-3 mo", title: "0-3 Months" },
     { key: "3-6 mo", title: "3-6 Months" },
     { key: "6-12 mo", title: "6-12 Months" },
-    { key: "12+ mo", title: "12+ Months" }
+    { key: "Later", title: "Later" }
   ];
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -304,7 +336,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {phases.map((phase) => (
               <div key={phase.key}>
                 <SortableContext items={customers.filter(c => c.phase === phase.key).map(c => c.id)} strategy={verticalListSortingStrategy}>
