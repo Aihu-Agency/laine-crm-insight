@@ -37,16 +37,22 @@ const CustomerCard = ({ customer, isDragging = false }: { customer: Customer; is
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/customers/${customer.id}`);
+  };
+
   return (
     <Card
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className="mb-3 cursor-pointer hover:shadow-md transition-all duration-200 bg-white border border-gray-200"
-      onClick={() => navigate(`/customers/${customer.id}`)}
     >
-      <CardContent className="p-4">
+      <div {...listeners} className="p-2 cursor-grab active:cursor-grabbing">
+        <div className="text-xs text-gray-400 mb-1">≡ Drag to move</div>
+      </div>
+      <CardContent className="p-4 pt-0" onClick={handleClick}>
         <div className="space-y-2">
           <h3 className="font-semibold text-gray-800 text-sm">{customer.fullName}</h3>
           <div className="text-xs text-gray-600 space-y-1">
@@ -290,8 +296,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       
       <div className="container mx-auto p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Sales Funnel</h1>
-          <p className="text-gray-600">Drag and drop customers between phases to update their status</p>
+          <h1 className="text-2xl font-bold text-gray-800">Sales Funnel</h1>
         </div>
 
         <DndContext
