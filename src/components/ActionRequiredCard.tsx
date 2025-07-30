@@ -1,9 +1,11 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const ActionRequiredCard = () => {
+  const navigate = useNavigate();
   const [showMoreActions, setShowMoreActions] = useState(false);
 
   const initialActionRequiredCustomers = [
@@ -95,6 +97,12 @@ const ActionRequiredCard = () => {
     setShowMoreActions(true);
   };
 
+  const handleCustomerClick = (customerName: string) => {
+    if (customerName.toLowerCase() === "mikko tuominen") {
+      navigate("/customers/1");
+    }
+  };
+
   const getPriorityStyles = (priority: "high" | "medium" | "low") => {
     switch (priority) {
       case 'high':
@@ -121,6 +129,7 @@ const ActionRequiredCard = () => {
             <div 
               key={index} 
               className={`flex justify-between items-center py-3 px-4 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md hover:scale-[1.01] ${getPriorityStyles(customer.priority)}`}
+              onClick={() => handleCustomerClick(customer.name)}
             >
               <span className="font-medium text-gray-800">{customer.name}</span>
               <span className="text-sm text-gray-600">{customer.action}</span>
