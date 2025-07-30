@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Calendar, Euro, User, Home, Heart, Clock, CalendarIcon } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Euro, User, Home, Heart, Clock, CalendarIcon, Bed, Bath, ExternalLink } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,6 +141,28 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
   };
 
   const customer = id ? getCustomerData(id) : null;
+
+  // Mock suggested properties data
+  const suggestedProperties = [
+    {
+      id: 1,
+      propertyType: "Apartment",
+      bedrooms: 3,
+      bathrooms: 2,
+      price: 350000,
+      location: "Puerto Banús, Marbella",
+      image: "/placeholder.svg"
+    },
+    {
+      id: 2,
+      propertyType: "Villa",
+      bedrooms: 2,
+      bathrooms: 2,
+      price: 395000,
+      location: "Marbella Golden Mile",
+      image: "/placeholder.svg"
+    }
+  ];
 
   // Initialize next action state when customer loads
   useEffect(() => {
@@ -412,6 +434,61 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Suggested Properties */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="w-5 h-5" />
+                    Suggested properties
+                  </CardTitle>
+                  <Badge className="bg-accent text-accent-foreground text-xs px-2 py-1">
+                    2 new found
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {suggestedProperties.map((property) => (
+                  <div
+                    key={property.id}
+                    className="group border border-border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => {
+                      // Navigate to property details - placeholder for now
+                      console.log(`Navigate to property ${property.id}`);
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium text-foreground">{property.propertyType}</h4>
+                          <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                          <div className="flex items-center gap-1">
+                            <Bed className="w-3 h-3" />
+                            <span>{property.bedrooms} bed</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Bath className="w-3 h-3" />
+                            <span>{property.bathrooms} bath</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{property.location}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold text-foreground">
+                          €{property.price.toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </div>
