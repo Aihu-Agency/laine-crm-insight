@@ -9,6 +9,9 @@ import Dashboard from "./components/Dashboard";
 import Customers from "./pages/Customers";
 import CustomerView from "./pages/CustomerView";
 import SalesFunnel from "./pages/SalesFunnel";
+import Rental from "./pages/Rental";
+import Todo from "./pages/Todo";
+import Settings from "./pages/Settings";
 import AddClientForm from "./components/AddClientForm";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +45,9 @@ const App = () => (
           <Route path="/customers/add" element={<AddClientPage />} />
           <Route path="/customers/:id" element={<CustomerView />} />
           <Route path="/sales-funnel" element={<SalesFunnel />} />
+          <Route path="/rental" element={<Rental />} />
+          <Route path="/todo" element={<Todo />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

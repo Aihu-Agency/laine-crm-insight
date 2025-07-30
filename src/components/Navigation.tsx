@@ -10,27 +10,17 @@ const Navigation = ({ onLogout }: NavigationProps) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleSettingsClick = () => {
-    if (onLogout) {
-      onLogout();
-    }
-  };
-
   const navItems = [
     { name: "Dashboard", path: "/dashboard", active: location.pathname === "/dashboard" },
     { name: "Sales Funnel", path: "/sales-funnel", active: location.pathname === "/sales-funnel" },
     { name: "Customers", path: "/customers", active: location.pathname === "/customers" },
     { name: "Rental", path: "/rental", active: location.pathname === "/rental" },
     { name: "ToDo", path: "/todo", active: location.pathname === "/todo" },
-    { name: "Settings", path: "/settings", active: false, onClick: handleSettingsClick },
+    { name: "Settings", path: "/settings", active: location.pathname === "/settings" },
   ];
 
   const handleNavClick = (item: typeof navItems[0]) => {
-    if (item.onClick) {
-      item.onClick();
-    } else {
-      navigate(item.path);
-    }
+    navigate(item.path);
   };
 
   return (
