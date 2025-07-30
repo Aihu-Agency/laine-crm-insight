@@ -37,7 +37,7 @@ const NewPropertiesCard = () => {
             <div 
               key={index} 
               className="flex justify-between items-center py-3 px-4 bg-laine-beige rounded-lg hover:bg-laine-beige/80 transition-colors duration-200 cursor-pointer"
-              onClick={() => item.name === "Mikko Tuominen" && navigate("/customers")}
+              onClick={() => item.name === "Mikko Tuominen" && navigate("/customers/1")}
             >
               <span className="font-medium text-gray-800">{item.name}</span>
               <span className="text-sm text-gray-600">{item.count}</span>
