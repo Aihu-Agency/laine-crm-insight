@@ -328,7 +328,12 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       
       <div className="container mx-auto p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Sales Funnel</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Sales Funnel</h1>
+            <button className="bg-laine-mint hover:bg-laine-mint/90 text-gray-800 px-4 py-2 rounded font-medium">
+              + Add new customer
+            </button>
+          </div>
         </div>
 
         <DndContext
