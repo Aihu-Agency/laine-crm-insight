@@ -11,15 +11,15 @@ export interface AirtableCustomer {
     'Time of purchase'?: string
     'Min price'?: number
     'Max price'?: number
-    'Areas of interest'?: string
+    'Areas of interest'?: string[]
     'Must have'?: string
     'Nice to have'?: string
     'Neighborhood or address'?: string
-    'Salesperson'?: string
+    'Sales person'?: string
     'Source of contact'?: string
-    'Property Type'?: string[]
-    'Bedrooms'?: number
-    'Bathrooms'?: number
+    'Type of apartment'?: string[]
+    'Bedrooms'?: string[]
+    'Bathrooms'?: string[]
     'Notes'?: string
     'Next Action Date'?: string
     'Next Action Type'?: string
@@ -80,16 +80,16 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   timeOfPurchase: record.fields['Time of purchase'],
   minPrice: record.fields['Min price'],
   maxPrice: record.fields['Max price'],
-  areasOfInterest: record.fields['Areas of interest'],
+  areasOfInterest: record.fields['Areas of interest']?.join(', '),
   mustHave: record.fields['Must have'],
   niceToHave: record.fields['Nice to have'],
   neighborhoodOrAddress: record.fields['Neighborhood or address'],
-  salesperson: record.fields['Salesperson'],
+  salesperson: record.fields['Sales person'],
   sourceOfContact: record.fields['Source of contact'],
   lastContact: undefined, // Field doesn't exist in Airtable
-  propertyType: record.fields['Property Type'],
-  bedrooms: record.fields['Bedrooms'],
-  bathrooms: record.fields['Bathrooms'],
+  propertyType: record.fields['Type of apartment'],
+  bedrooms: record.fields['Bedrooms']?.[0] ? parseInt(record.fields['Bedrooms'][0]) : undefined,
+  bathrooms: record.fields['Bathrooms']?.[0] ? parseInt(record.fields['Bathrooms'][0]) : undefined,
   notes: record.fields['Notes'],
   nextActionDate: record.fields['Next Action Date'],
   nextActionType: record.fields['Next Action Type'],
