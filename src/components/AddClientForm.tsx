@@ -11,375 +11,377 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { airtableApi } from "@/services/airtableApi";
+import { Customer } from "@/types/airtable";
+import { toast } from "@/hooks/use-toast";
 import Navigation from "./Navigation";
 
 interface AddClientFormProps {
   onSave: () => void;
   onCancel: () => void;
-  initialData?: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    areaOfInterest?: string;
-    propertyTypes?: string[];
-    bedrooms?: string[];
-    bathrooms?: string[];
-    minPrice?: number;
-    maxPrice?: number;
-    notes?: string;
-    nextAction?: string;
-    nextActionDate?: string;
-  };
+  initialData?: Partial<Customer>;
   isEditing?: boolean;
 }
 
 const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: AddClientFormProps) => {
-  const [nextActionDate, setNextActionDate] = useState<Date>(
+  const queryClient = useQueryClient();
+  
+  const [formData, setFormData] = useState({
+    firstName: initialData?.fullName?.split(' ')[0] || '',
+    lastName: initialData?.fullName?.split(' ').slice(1).join(' ') || '',
+    email: initialData?.email || '',
+    phone: initialData?.phone || '',
+    phase: initialData?.phase || 'New Lead',
+    location: initialData?.location || '',
+    budgetRange: initialData?.budgetRange || '',
+    salesperson: initialData?.salesperson || '',
+    notes: initialData?.notes || '',
+    nextActionType: initialData?.nextActionType || '',
+  });
+
+  const [nextActionDate, setNextActionDate] = useState<Date | undefined>(
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
   );
-  const [apartmentTypes, setApartmentTypes] = useState<string[]>(initialData?.propertyTypes || []);
-  const [bedrooms, setBedrooms] = useState<string[]>(initialData?.bedrooms || []);
-  const [bathrooms, setBathrooms] = useState<string[]>(initialData?.bathrooms || []);
+  const [propertyTypes, setPropertyTypes] = useState<string[]>(initialData?.propertyType || []);
+  const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
+  const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
 
-  const handleApartmentTypeChange = (type: string, checked: boolean) => {
+  const createCustomerMutation = useMutation({
+    mutationFn: (customerData: Partial<Customer>) => airtableApi.createCustomer(customerData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Success",
+        description: "Customer created successfully",
+      });
+      onSave();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create customer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCustomerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Customer> }) =>
+      airtableApi.updateCustomer(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer'] });
+      toast({
+        title: "Success",
+        description: "Customer updated successfully",
+      });
+      onSave();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update customer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePropertyTypeChange = (type: string, checked: boolean) => {
     if (checked) {
-      setApartmentTypes([...apartmentTypes, type]);
+      setPropertyTypes([...propertyTypes, type]);
     } else {
-      setApartmentTypes(apartmentTypes.filter(t => t !== type));
+      setPropertyTypes(propertyTypes.filter(t => t !== type));
     }
   };
 
-  const handleBedroomsChange = (bedroom: string, checked: boolean) => {
-    if (checked) {
-      setBedrooms([...bedrooms, bedroom]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const customerData: Partial<Customer> = {
+      fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+      email: formData.email,
+      phone: formData.phone,
+      phase: formData.phase,
+      location: formData.location,
+      budgetRange: formData.budgetRange,
+      salesperson: formData.salesperson,
+      propertyType: propertyTypes,
+      bedrooms,
+      bathrooms,
+      notes: formData.notes,
+      nextActionType: formData.nextActionType,
+      nextActionDate: nextActionDate ? format(nextActionDate, 'yyyy-MM-dd') : undefined,
+    };
+
+    if (isEditing && initialData?.id) {
+      updateCustomerMutation.mutate({ id: initialData.id, data: customerData });
     } else {
-      setBedrooms(bedrooms.filter(b => b !== bedroom));
+      createCustomerMutation.mutate(customerData);
     }
   };
 
-  const handleBathroomsChange = (bathroom: string, checked: boolean) => {
-    if (checked) {
-      setBathrooms([...bathrooms, bathroom]);
-    } else {
-      setBathrooms(bathrooms.filter(b => b !== bathroom));
-    }
-  };
-
-  const apartmentTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"];
-  const bedroomOptions = ["Studio", "1", "2", "3", "4+"];
-  const bathroomOptions = ["1", "2", "3+"];
+  const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"];
+  const bedroomOptions = [1, 2, 3, 4, 5];
+  const bathroomOptions = [1, 2, 3, 4];
 
   return (
     <div className="min-h-screen bg-laine-grey">
       <Navigation />
       
       <div className="container mx-auto p-6 max-w-4xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-gray-800">
-              {isEditing ? "Edit customer" : "Add New Client"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Basic Information</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input 
-                    id="firstName" 
-                    defaultValue={initialData?.firstName || ""} 
-                    placeholder="Enter first name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
-                    id="lastName" 
-                    defaultValue={initialData?.lastName || ""} 
-                    placeholder="Enter last name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    defaultValue={initialData?.email || ""}
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    defaultValue={initialData?.phone || ""}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerType">Customer Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="buyer">Buyer</SelectItem>
-                      <SelectItem value="renter">Renter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="language">Preferred Language</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="english">English</SelectItem>
-                      <SelectItem value="spanish">Spanish</SelectItem>
-                      <SelectItem value="finnish">Finnish</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Purchase Information */}
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Purchase Information</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="timeOfPurchase">Time of Purchase</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timeframe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="immediately">Immediately</SelectItem>
-                      <SelectItem value="1-3months">1–3 months</SelectItem>
-                      <SelectItem value="3-6months">3–6 months</SelectItem>
-                      <SelectItem value="later">Later</SelectItem>
-                      <SelectItem value="property-shown">Property shown</SelectItem>
-                      <SelectItem value="not-specified">Not specified</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerCategory">Customer Category</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="investor">Investor</SelectItem>
-                      <SelectItem value="holiday-home">Holiday home</SelectItem>
-                      <SelectItem value="primary-residence">Primary residence</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="minPrice">Min Price</Label>
-                  <Input 
-                    id="minPrice" 
-                    type="number" 
-                    defaultValue={initialData?.minPrice?.toString() || ""}
-                    placeholder="Minimum price"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxPrice">Max Price</Label>
-                  <Input 
-                    id="maxPrice" 
-                    type="number" 
-                    defaultValue={initialData?.maxPrice?.toString() || ""}
-                    placeholder="Maximum price"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Property Preferences */}
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Property Preferences</h3>
-              </div>
+        <form onSubmit={handleSubmit}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold text-gray-800">
+                {isEditing ? "Edit customer" : "Add New Client"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              {/* Basic Information */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="areasOfInterest">Areas of Interest</Label>
-                  <Input 
-                    id="areasOfInterest" 
-                    defaultValue={initialData?.areaOfInterest || ""} 
-                    placeholder="Enter areas of interest"
-                  />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Basic Information</h3>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label>Type of Apartment</Label>
-                  <div className="flex flex-wrap gap-4">
-                    {apartmentTypeOptions.map((type) => (
-                      <div key={type} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`apartment-${type}`}
-                          checked={apartmentTypes.includes(type)}
-                          onCheckedChange={(checked) => handleApartmentTypeChange(type, checked as boolean)}
-                        />
-                        <Label htmlFor={`apartment-${type}`}>{type}</Label>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input 
+                      id="firstName" 
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      placeholder="Enter first name"
+                      required
+                    />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Bedrooms</Label>
-                  <div className="flex flex-wrap gap-4">
-                    {bedroomOptions.map((bedroom) => (
-                      <div key={bedroom} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`bedroom-${bedroom}`}
-                          checked={bedrooms.includes(bedroom)}
-                          onCheckedChange={(checked) => handleBedroomsChange(bedroom, checked as boolean)}
-                        />
-                        <Label htmlFor={`bedroom-${bedroom}`}>{bedroom}</Label>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input 
+                      id="lastName" 
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      placeholder="Enter last name"
+                      required
+                    />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Bathrooms</Label>
-                  <div className="flex flex-wrap gap-4">
-                    {bathroomOptions.map((bathroom) => (
-                      <div key={bathroom} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`bathroom-${bathroom}`}
-                          checked={bathrooms.includes(bathroom)}
-                          onCheckedChange={(checked) => handleBathroomsChange(bathroom, checked as boolean)}
-                        />
-                        <Label htmlFor={`bathroom-${bathroom}`}>{bathroom}</Label>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                      id="phone" 
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phase">Phase</Label>
+                    <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select phase" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New Lead">New Lead</SelectItem>
+                        <SelectItem value="Qualified Lead">Qualified Lead</SelectItem>
+                        <SelectItem value="Opportunity">Opportunity</SelectItem>
+                        <SelectItem value="Proposal">Proposal</SelectItem>
+                        <SelectItem value="Closed Won">Closed Won</SelectItem>
+                        <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="salesperson">Salesperson</Label>
+                    <Select value={formData.salesperson} onValueChange={(value) => setFormData({...formData, salesperson: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select salesperson" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Laura">Laura</SelectItem>
+                        <SelectItem value="Anna">Anna</SelectItem>
+                        <SelectItem value="Mikko">Mikko</SelectItem>
+                        <SelectItem value="Sari">Sari</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Additional Information */}
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Additional Information</h3>
-              </div>
+              {/* Location and Budget */}
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="mustHave">Must Have</Label>
-                  <Textarea 
-                    id="mustHave" 
-                    placeholder="List must-have features or requirements"
-                    rows={3}
-                  />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Location & Budget</h3>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="niceToHave">Nice to Have</Label>
-                  <Textarea 
-                    id="niceToHave" 
-                    placeholder="List nice-to-have features or preferences"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="neighborhood">Neighborhood or Address</Label>
-                  <Input 
-                    id="neighborhood" 
-                    placeholder="Enter preferred neighborhood or specific address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="source">Source of Contact</Label>
-                  <Input 
-                    id="source" 
-                    placeholder="How did they find us?"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes / Comments</Label>
-                  <Textarea 
-                    id="notes" 
-                    defaultValue={initialData?.notes || ""}
-                    placeholder="Additional notes or comments"
-                    rows={4}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input 
+                      id="location" 
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      placeholder="Enter preferred location"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="budgetRange">Budget Range</Label>
+                    <Input 
+                      id="budgetRange" 
+                      value={formData.budgetRange}
+                      onChange={(e) => setFormData({...formData, budgetRange: e.target.value})}
+                      placeholder="e.g., €300k - €400k"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Next Action */}
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Next Action</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Next Action Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !nextActionDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={nextActionDate}
-                        onSelect={setNextActionDate}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+              {/* Property Preferences */}
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Property Preferences</h3>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nextActionNote">Next Action Note</Label>
-                  <Input 
-                    id="nextActionNote" 
-                    defaultValue={initialData?.nextAction || ""}
-                    placeholder="Brief description of next action"
-                  />
-                </div>
-              </div>
-            </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Property Types</Label>
+                    <div className="flex flex-wrap gap-4">
+                      {propertyTypeOptions.map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`property-${type}`}
+                            checked={propertyTypes.includes(type)}
+                            onCheckedChange={(checked) => handlePropertyTypeChange(type, checked as boolean)}
+                          />
+                          <Label htmlFor={`property-${type}`}>{type}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <Button 
-                variant="outline" 
-                onClick={onCancel}
-                className="px-8"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={onSave}
-                className="px-8 bg-laine-mint hover:bg-laine-mint/90 text-gray-800"
-              >
-                Save
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bedrooms">Bedrooms</Label>
+                      <Select value={bedrooms?.toString() || ""} onValueChange={(value) => setBedrooms(value ? parseInt(value) : undefined)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select bedrooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bedroomOptions.map((num) => (
+                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bathrooms">Bathrooms</Label>
+                      <Select value={bathrooms?.toString() || ""} onValueChange={(value) => setBathrooms(value ? parseInt(value) : undefined)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select bathrooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bathroomOptions.map((num) => (
+                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes and Next Action */}
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Notes & Next Action</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea 
+                      id="notes" 
+                      value={formData.notes}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      placeholder="Additional notes about the customer"
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nextActionType">Next Action Type</Label>
+                      <Select value={formData.nextActionType} onValueChange={(value) => setFormData({...formData, nextActionType: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select action type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Phone Call">Phone Call</SelectItem>
+                          <SelectItem value="Email">Email</SelectItem>
+                          <SelectItem value="Property Viewing">Property Viewing</SelectItem>
+                          <SelectItem value="Meeting">Meeting</SelectItem>
+                          <SelectItem value="Follow-up">Follow-up</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Next Action Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !nextActionDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={nextActionDate}
+                            onSelect={setNextActionDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={onCancel}
+                  className="px-8"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={createCustomerMutation.isPending || updateCustomerMutation.isPending}
+                  className="px-8 bg-laine-mint hover:bg-laine-mint/90 text-gray-800"
+                >
+                  {(createCustomerMutation.isPending || updateCustomerMutation.isPending) ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </form>
       </div>
     </div>
   );

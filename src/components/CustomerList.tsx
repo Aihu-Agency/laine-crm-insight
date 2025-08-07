@@ -2,156 +2,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-interface Customer {
-  id: number;
-  fullName: string;
-  phase: string;
-  location: string;
-  budgetRange: string;
-  salesperson: string;
-  lastContact: string;
-}
+import { useQuery } from "@tanstack/react-query";
+import { airtableApi } from "@/services/airtableApi";
+import { Customer } from "@/types/airtable";
 
 const CustomerList = () => {
   const navigate = useNavigate();
-  const customers: Customer[] = [
-    {
-      id: 1,
-      fullName: "Mikko Tuominen",
-      phase: "0-3 mo",
-      location: "Marbella",
-      budgetRange: "€300k - €400k",
-      salesperson: "Laura",
-      lastContact: "2 days ago"
-    },
-    {
-      id: 2,
-      fullName: "Anna Korhonen",
-      phase: "3-6 mo",
-      location: "Estepona",
-      budgetRange: "€250k - €350k",
-      salesperson: "Anna",
-      lastContact: "1 week ago"
-    },
-    {
-      id: 3,
-      fullName: "Petri Hakala",
-      phase: "6-12 mo",
-      location: "Fuengirola",
-      budgetRange: "€200k - €300k",
-      salesperson: "Mikko",
-      lastContact: "3 days ago"
-    },
-    {
-      id: 4,
-      fullName: "Sari Laakso",
-      phase: "0-3 mo",
-      location: "Torremolinos",
-      budgetRange: "€400k - €500k",
-      salesperson: "Laura",
-      lastContact: "5 days ago"
-    },
-    {
-      id: 5,
-      fullName: "Jukka Nieminen",
-      phase: "3-6 mo",
-      location: "Marbella",
-      budgetRange: "€350k - €450k",
-      salesperson: "Anna",
-      lastContact: "1 day ago"
-    },
-    {
-      id: 6,
-      fullName: "Liisa Mäkinen",
-      phase: "0-3 mo",
-      location: "Benalmádena",
-      budgetRange: "€180k - €280k",
-      salesperson: "Sari",
-      lastContact: "4 days ago"
-    },
-    {
-      id: 7,
-      fullName: "Tero Jokinen",
-      phase: "6-12 mo",
-      location: "Mijas",
-      budgetRange: "€500k - €600k",
-      salesperson: "Mikko",
-      lastContact: "2 weeks ago"
-    },
-    {
-      id: 8,
-      fullName: "Kirsi Salonen",
-      phase: "3-6 mo",
-      location: "Marbella",
-      budgetRange: "€320k - €420k",
-      salesperson: "Laura",
-      lastContact: "6 days ago"
-    },
-    {
-      id: 9,
-      fullName: "Ville Heikkinen",
-      phase: "0-3 mo",
-      location: "Estepona",
-      budgetRange: "€280k - €380k",
-      salesperson: "Anna",
-      lastContact: "3 days ago"
-    },
-    {
-      id: 10,
-      fullName: "Marja Virtanen",
-      phase: "12+ mo",
-      location: "Fuengirola",
-      budgetRange: "€450k - €550k",
-      salesperson: "Sari",
-      lastContact: "1 month ago"
-    },
-    {
-      id: 11,
-      fullName: "Markus Rantala",
-      phase: "0-3 mo",
-      location: "Torremolinos",
-      budgetRange: "€300k - €400k",
-      salesperson: "Laura",
-      lastContact: "1 week ago"
-    },
-    {
-      id: 12,
-      fullName: "Tiina Källi",
-      phase: "3-6 mo",
-      location: "Mijas",
-      budgetRange: "€380k - €480k",
-      salesperson: "Mikko",
-      lastContact: "5 days ago"
-    },
-    {
-      id: 13,
-      fullName: "Otso Lindfors",
-      phase: "6-12 mo",
-      location: "Benalmádena",
-      budgetRange: "€220k - €320k",
-      salesperson: "Anna",
-      lastContact: "2 weeks ago"
-    },
-    {
-      id: 14,
-      fullName: "Tommi Perälä",
-      phase: "0-3 mo",
-      location: "Marbella",
-      budgetRange: "€600k - €700k",
-      salesperson: "Sari",
-      lastContact: "4 days ago"
-    },
-    {
-      id: 15,
-      fullName: "Elina Koskinen",
-      phase: "3-6 mo",
-      location: "Estepona",
-      budgetRange: "€250k - €350k",
-      salesperson: "Laura",
-      lastContact: "1 week ago"
-    }
-  ];
+
+  const { data: customers = [], isLoading, error } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => airtableApi.getCustomers(),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-gray-600">Loading customers...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-red-600">Error loading customers. Please try again.</div>
+      </div>
+    );
+  }
 
   const getPhaseColor = (phase: string) => {
     if (phase.includes("0-3")) return "bg-red-50 text-red-700 border-red-200";
@@ -177,9 +54,9 @@ const CustomerList = () => {
         <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
-              <div className="font-medium text-gray-800">
-                {customer.fullName}
-              </div>
+               <div className="font-medium text-gray-800">
+                 {customer.fullName}
+               </div>
               
               <div>
                 <span className={`px-2 py-1 rounded border text-xs font-medium ${getPhaseColor(customer.phase)}`}>
@@ -187,21 +64,21 @@ const CustomerList = () => {
                 </span>
               </div>
               
-              <div className="text-sm text-gray-600">
-                {customer.location}
-              </div>
+               <div className="text-sm text-gray-600">
+                 {customer.location || 'Not specified'}
+               </div>
               
-              <div className="text-sm text-gray-600">
-                {customer.budgetRange}
-              </div>
+               <div className="text-sm text-gray-600">
+                 {customer.budgetRange || 'Not specified'}
+               </div>
               
-              <div className="text-sm text-gray-600">
-                {customer.salesperson}
-              </div>
+               <div className="text-sm text-gray-600">
+                 {customer.salesperson || 'Unassigned'}
+               </div>
               
-              <div className="text-sm text-gray-500">
-                {customer.lastContact}
-              </div>
+               <div className="text-sm text-gray-500">
+                 {customer.lastContact || 'No contact recorded'}
+               </div>
               
               <div className="flex justify-start">
                 <Button 

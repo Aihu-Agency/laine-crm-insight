@@ -1,146 +1,147 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Calendar, Euro, User, Home, Heart, Clock, CalendarIcon, Bed, Bath, ExternalLink } from "lucide-react";
-import Navigation from "@/components/Navigation";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, MapPin, DollarSign, User, Calendar, Phone, Mail, Edit, Plus, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { airtableApi } from "@/services/airtableApi";
+import { Customer } from "@/types/airtable";
+import { toast } from "@/hooks/use-toast";
+import Navigation from "@/components/Navigation";
 
-interface CustomerData {
-  id: number;
-  fullName: string;
-  phase: string;
-  location: string;
-  budgetRange: string;
-  salesperson: string;
-  lastContact: string;
-  // Extended customer data
-  email?: string;
-  phone?: string;
-  age?: number;
-  nationality?: string;
-  occupation?: string;
-  familyStatus?: string;
-  children?: number;
-  customerType?: string; // e.g., "Buyer", "Seller", "Renter"
-  customerCategory?: string; // e.g., "Investor", "End User", "Developer"
-  // Property preferences
-  propertyType?: string[];
-  bedrooms?: number[];
-  bathrooms?: number[];
-  amenities?: string[];
-  preferredAreas?: string[];
-  // Financial information
-  budget?: {
-    min: number;
-    max: number;
-    currency: string;
-    financing?: string;
-  };
-  // Notes and history
-  notes?: string;
-  nextAction?: string;
-  nextActionDate?: string;
-  tags?: string[];
-}
-
-const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
-  const { id } = useParams();
+const CustomerView = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const fromView = searchParams.get('from');
+  const queryClient = useQueryClient();
   
-  // State for editing next action
   const [isEditingNextAction, setIsEditingNextAction] = useState(false);
-  const [nextActionText, setNextActionText] = useState("");
-  const [nextActionDate, setNextActionDate] = useState<Date | undefined>();
-  const [nextActionTime, setNextActionTime] = useState("");
-  
-  // State for adding notes
-  const [isAddingNote, setIsAddingNote] = useState(false);
-  const [newNote, setNewNote] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [nextActionInput, setNextActionInput] = useState("");
+  const [nextActionTypeInput, setNextActionTypeInput] = useState("");
+  const [nextActionDateInput, setNextActionDateInput] = useState<Date>();
+  const [notesInput, setNotesInput] = useState("");
 
-  // Mock customer data - in a real app this would come from an API or state management
-  const getCustomerData = (customerId: string): CustomerData | null => {
-    const customers: CustomerData[] = [
-      {
-        id: 1,
-        fullName: "Mikko Tuominen",
-        phase: "0-3 mo",
-        location: "Marbella",
-        budgetRange: "€300k - €400k",
-        salesperson: "Laura",
-        lastContact: "2 days ago",
-        email: "mikko.tuominen@email.com",
-        phone: "+358 40 123 4567",
-        age: 45,
-        nationality: "Finnish",
-        occupation: "Software Engineer",
-        familyStatus: "Married",
-        children: 2,
-        customerType: "Buyer",
-        customerCategory: "Investor",
-        propertyType: ["Apartment", "Villa"],
-        bedrooms: [2, 3],
-        bathrooms: [2, 3],
-        amenities: ["Pool", "Sea view", "Parking"],
-        preferredAreas: ["Marbella", "Puerto Banús"],
-        budget: {
-          min: 300000,
-          max: 400000,
-          currency: "EUR",
-          financing: "Cash purchase"
-        },
-        notes: "Very interested in sea view properties. Looking for investment opportunity with rental potential.",
-        nextAction: "Sovi kohteen esittelyn ajankohta",
-        nextActionDate: "2024-01-15",
-        tags: ["High Priority", "Investment", "Cash Buyer"]
-      },
-      {
-        id: 2,
-        fullName: "Anna Korhonen",
-        phase: "3-6 mo",
-        location: "Estepona",
-        budgetRange: "€250k - €350k",
-        salesperson: "Anna",
-        lastContact: "1 week ago",
-        email: "anna.korhonen@email.com",
-        phone: "+358 50 987 6543",
-        age: 38,
-        nationality: "Finnish",
-        occupation: "Marketing Manager",
-        familyStatus: "Single",
-        children: 0,
-        customerType: "Buyer",
-        customerCategory: "End User",
-        propertyType: ["Apartment"],
-        bedrooms: [1, 2],
-        bathrooms: [1, 2],
-        amenities: ["Gym", "Pool", "Beach access"],
-        preferredAreas: ["Estepona", "San Pedro"],
-        budget: {
-          min: 250000,
-          max: 350000,
-          currency: "EUR",
-          financing: "Mortgage + cash"
-        },
-        notes: "First-time buyer in Spain. Needs guidance on legal process and taxes.",
-        nextAction: "Schedule legal consultation",
-        nextActionDate: "2024-01-20",
-        tags: ["First-time buyer", "Legal assistance needed"]
-      }
-    ];
+  const { data: customerData, isLoading, error } = useQuery({
+    queryKey: ['customer', id],
+    queryFn: () => airtableApi.getCustomer(id!),
+    enabled: !!id,
+  });
 
-    return customers.find(c => c.id === parseInt(customerId)) || null;
+  const updateCustomerMutation = useMutation({
+    mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
+      airtableApi.updateCustomer(customerId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Success",
+        description: "Customer updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update customer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-laine-grey">
+        <Navigation />
+        <div className="container mx-auto p-6">
+          <div className="flex justify-center items-center py-12">
+            <div className="text-gray-600">Loading customer...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !customerData) {
+    return (
+      <div className="min-h-screen bg-laine-grey">
+        <Navigation />
+        <div className="container mx-auto p-6">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">Customer Not Found</h1>
+            <p className="text-gray-600 mb-6">The customer you're looking for doesn't exist.</p>
+            <Button onClick={() => navigate("/customers")}>
+              Back to Customers
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleEditCustomer = () => {
+    navigate(`/customers/add?edit=true&customerId=${id}`, { 
+      state: { 
+        initialData: customerData,
+        isEditing: true 
+      } 
+    });
   };
 
-  const customer = id ? getCustomerData(id) : null;
+  const handleScheduleNextAction = () => {
+    if (nextActionInput && nextActionTypeInput && nextActionDateInput) {
+      updateCustomerMutation.mutate({
+        customerId: id!,
+        data: {
+          nextActionType: nextActionTypeInput,
+          nextActionDate: format(nextActionDateInput, 'yyyy-MM-dd'),
+        }
+      });
+      setIsEditingNextAction(false);
+      setNextActionInput("");
+      setNextActionTypeInput("");
+      setNextActionDateInput(undefined);
+    }
+  };
+
+  const handleAddNote = () => {
+    setIsEditingNotes(true);
+    setNotesInput(customerData.notes || "");
+  };
+
+  const handleSaveNote = () => {
+    updateCustomerMutation.mutate({
+      customerId: id!,
+      data: {
+        notes: notesInput
+      }
+    });
+    setIsEditingNotes(false);
+  };
+
+  const handleCancelNote = () => {
+    setIsEditingNotes(false);
+    setNotesInput("");
+  };
+
+  const handleBackClick = () => {
+    navigate("/customers");
+  };
+
+  const getPhaseColor = (phase: string) => {
+    if (phase.includes("0-3") || phase === "New Lead") return "bg-red-50 text-red-700 border-red-200";
+    if (phase.includes("3-6") || phase === "Qualified Lead") return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    if (phase.includes("6-12") || phase === "Opportunity") return "bg-blue-50 text-blue-700 border-blue-200";
+    if (phase === "Proposal") return "bg-purple-50 text-purple-700 border-purple-200";
+    if (phase === "Closed Won") return "bg-green-50 text-green-700 border-green-200";
+    if (phase === "Closed Lost") return "bg-gray-50 text-gray-700 border-gray-200";
+    return "bg-gray-50 text-gray-700 border-gray-200";
+  };
 
   // Mock suggested properties data
   const suggestedProperties = [
@@ -164,115 +165,9 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
     }
   ];
 
-  // Initialize next action state when customer loads
-  useEffect(() => {
-    if (customer?.nextAction) {
-      setNextActionText(customer.nextAction);
-    }
-    if (customer?.nextActionDate) {
-      setNextActionDate(new Date(customer.nextActionDate));
-    }
-  }, [customer?.nextAction, customer?.nextActionDate]);
-
-  const handleEditCustomer = () => {
-    // Navigate to add customer page with pre-filled data
-    const [firstName, ...lastNameParts] = customer?.fullName.split(" ") || [];
-    const lastName = lastNameParts.join(" ");
-    
-    // Convert property types and bedroom/bathroom arrays to match form format
-    const propertyTypes = customer?.propertyType || [];
-    const bedroomOptions = customer?.bedrooms?.map(num => num.toString()) || [];
-    const bathroomOptions = customer?.bathrooms?.map(num => num.toString()) || [];
-    
-    navigate("/customers/add", {
-      state: {
-        isEditing: true,
-        initialData: {
-          firstName: firstName || "",
-          lastName: lastName || "",
-          email: customer?.email || "",
-          phone: customer?.phone || "",
-          areaOfInterest: customer?.preferredAreas?.join(", ") || customer?.location || "",
-          propertyTypes: propertyTypes,
-          bedrooms: bedroomOptions,
-          bathrooms: bathroomOptions,
-          minPrice: customer?.budget?.min,
-          maxPrice: customer?.budget?.max,
-          notes: customer?.notes || "",
-          nextAction: customer?.nextAction || "",
-          nextActionDate: customer?.nextActionDate || "",
-        }
-      }
-    });
-  };
-
-  const handleScheduleNextAction = () => {
-    if (!isEditingNextAction) {
-      setIsEditingNextAction(true);
-      setNextActionText(customer?.nextAction || "");
-      setNextActionDate(customer?.nextActionDate ? new Date(customer.nextActionDate) : undefined);
-      setNextActionTime("");
-    } else {
-      // Save logic would go here
-      setIsEditingNextAction(false);
-    }
-  };
-
-  const handleAddNote = () => {
-    setIsAddingNote(true);
-    setNewNote("");
-  };
-
-  const handleSaveNote = () => {
-    // Save logic would go here - in a real app, this would update the customer data
-    console.log("Saving note:", newNote);
-    setIsAddingNote(false);
-    setNewNote("");
-  };
-
-  const handleCancelNote = () => {
-    setIsAddingNote(false);
-    setNewNote("");
-  };
-
-  const handleBackClick = () => {
-    if (fromView === 'sales-funnel') {
-      navigate('/sales-funnel');
-    } else {
-      navigate('/customers');
-    }
-  };
-
-  if (!customer) {
-    return (
-      <div className="min-h-screen bg-laine-grey">
-        <Navigation onLogout={onLogout} />
-        <div className="container mx-auto p-6">
-          <Card className="text-center p-8">
-            <CardContent>
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">Customer Not Found</h2>
-              <p className="text-gray-600 mb-4">The customer you're looking for doesn't exist.</p>
-              <Button onClick={handleBackClick} variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const getPhaseColor = (phase: string) => {
-    if (phase.includes("0-3")) return "bg-red-50 text-red-700 border-red-200";
-    if (phase.includes("3-6")) return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    if (phase.includes("6-12")) return "bg-blue-50 text-blue-700 border-blue-200";
-    return "bg-gray-50 text-gray-700 border-gray-200";
-  };
-
   return (
     <div className="min-h-screen bg-laine-grey">
-      <Navigation onLogout={onLogout} />
+      <Navigation />
       
       <div className="container mx-auto p-6">
         {/* Header */}
@@ -287,12 +182,12 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">{customer.fullName}</h1>
+              <h1 className="text-2xl font-bold text-gray-800">{customerData.fullName}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge className={`${getPhaseColor(customer.phase)} border`}>
-                  {customer.phase}
+                <Badge className={`${getPhaseColor(customerData.phase)} border`}>
+                  {customerData.phase}
                 </Badge>
-                {customer.tags?.map((tag, index) => (
+                {customerData.tags?.map((tag, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
                     {tag}
                   </Badge>
@@ -320,35 +215,49 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
                   Contact Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <p className="text-gray-800">{customer.email || "Not provided"}</p>
+                    <p className="text-sm text-gray-500">Phone</p>
+                    <p className="font-medium flex items-center">
+                      <Phone className="w-4 h-4 mr-2" />
+                      {customerData.phone || 'Not provided'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Phone</label>
-                    <p className="text-gray-800">{customer.phone || "Not provided"}</p>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium flex items-center">
+                      <Mail className="w-4 h-4 mr-2" />
+                      {customerData.email || 'Not provided'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Nationality</label>
-                    <p className="text-gray-800">{customer.nationality || "Not provided"}</p>
+                    <p className="text-sm text-gray-500">Location</p>
+                    <p className="font-medium flex items-center">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      {customerData.location || 'Not specified'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Customer Type</label>
-                    <p className="text-gray-800">{customer.customerType || "Not specified"}</p>
+                    <p className="text-sm text-gray-500">Budget Range</p>
+                    <p className="font-medium flex items-center">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      {customerData.budgetRange || 'Not specified'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Customer Category</label>
-                    <p className="text-gray-800">{customer.customerCategory || "Not specified"}</p>
+                    <p className="text-sm text-gray-500">Salesperson</p>
+                    <p className="font-medium flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      {customerData.salesperson || 'Unassigned'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Salesperson</label>
-                    <p className="text-gray-800">{customer.salesperson}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Last Contact</label>
-                    <p className="text-gray-800">{customer.lastContact}</p>
+                    <p className="text-sm text-gray-500">Last Contact</p>
+                    <p className="font-medium flex items-center">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {customerData.lastContact || 'No contact recorded'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -357,116 +266,65 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
             {/* Property Preferences */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Home className="w-5 h-5" />
-                  Property Preferences
-                </CardTitle>
+                <CardTitle>Property Preferences</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Property Type</label>
+                    <p className="text-sm text-gray-500">Property Types</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {customer.propertyType?.map((type, index) => (
+                      {customerData.propertyType?.map((type, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {type}
                         </Badge>
-                      )) || <span className="text-gray-800">Not specified</span>}
+                      )) || <span className="text-gray-400 text-sm">Not specified</span>}
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Bedrooms</label>
-                    <p className="text-gray-800">
-                      {customer.bedrooms?.join(", ") || "Not specified"}
-                    </p>
+                    <p className="text-sm text-gray-500">Bedrooms</p>
+                    <p className="font-medium">{customerData.bedrooms || 'Not specified'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Bathrooms</label>
-                    <p className="text-gray-800">
-                      {customer.bathrooms?.join(", ") || "Not specified"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Preferred Areas</label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {customer.preferredAreas?.map((area, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {area}
-                        </Badge>
-                      )) || <span className="text-gray-800">Not specified</span>}
-                    </div>
+                    <p className="text-sm text-gray-500">Bathrooms</p>
+                    <p className="font-medium">{customerData.bathrooms || 'Not specified'}</p>
                   </div>
                 </div>
-                
-                {customer.amenities && customer.amenities.length > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Desired Amenities</label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {customer.amenities.map((amenity, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          <Heart className="w-3 h-3 mr-1" />
-                          {amenity}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Financial Details moved here */}
-                {customer.budget && (
-                  <div className="mt-6 pt-4 border-t border-gray-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Euro className="w-5 h-5" />
-                      <h3 className="text-lg font-semibold">Financial Details</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Budget Range</label>
-                        <p className="text-gray-800">
-                          €{customer.budget.min.toLocaleString()} - €{customer.budget.max.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600">Financing</label>
-                        <p className="text-gray-800">{customer.budget.financing}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
-            {/* Notes - moved from right column */}
+            {/* Notes */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Notes</CardTitle>
-                  {!isAddingNote && (
-                    <Button onClick={handleAddNote} variant="outline" size="sm">
-                      Add notes
-                    </Button>
-                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleAddNote}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Notes
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-800 leading-relaxed mb-4">
-                  {customer.notes || "No notes available."}
-                </p>
-                
-                {isAddingNote && (
+                {!isEditingNotes ? (
+                  <p className="text-gray-800">{customerData.notes || "No notes available"}</p>
+                ) : (
                   <div className="space-y-3">
                     <Textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Add your notes here..."
-                      className="min-h-[100px]"
+                      value={notesInput}
+                      onChange={(e) => setNotesInput(e.target.value)}
+                      placeholder="Add notes about this customer..."
+                      rows={4}
                     />
                     <div className="flex gap-2">
                       <Button onClick={handleSaveNote} size="sm">
+                        <Save className="w-4 h-4 mr-2" />
                         Save
                       </Button>
                       <Button onClick={handleCancelNote} variant="outline" size="sm">
+                        <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
                     </div>
@@ -476,143 +334,140 @@ const CustomerView = ({ onLogout }: { onLogout?: () => void }) => {
             </Card>
           </div>
 
-          {/* Right column - Summary and actions */}
+          {/* Right column */}
           <div className="space-y-6">
             {/* Next Actions */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Next Actions
-                </CardTitle>
+                <CardTitle>Next Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Next Action</label>
-                  {isEditingNextAction ? (
-                    <Input
-                      value={nextActionText}
-                      onChange={(e) => setNextActionText(e.target.value)}
-                      placeholder="Enter next action..."
-                      className="mt-1"
-                    />
-                  ) : (
-                    <p className="text-gray-800 mt-1">{customer.nextAction || "No action planned"}</p>
-                  )}
+              <CardContent>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 mb-2">Current action</p>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    {customerData.nextActionType ? (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{customerData.nextActionType}</p>
+                          <p className="text-sm text-gray-600">
+                            Due: {customerData.nextActionDate || 'No date set'}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsEditingNextAction(true)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 mb-2">No next action scheduled</p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsEditingNextAction(true)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Schedule Action
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                
-                {isEditingNextAction ? (
-                  <>
+
+                {isEditingNextAction && (
+                  <div className="space-y-3 p-3 border rounded-lg">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Due Date</label>
+                      <label className="text-sm font-medium text-gray-700">Action Type</label>
+                      <Select value={nextActionTypeInput} onValueChange={setNextActionTypeInput}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select action type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Phone Call">Phone Call</SelectItem>
+                          <SelectItem value="Email">Email</SelectItem>
+                          <SelectItem value="Property Viewing">Property Viewing</SelectItem>
+                          <SelectItem value="Meeting">Meeting</SelectItem>
+                          <SelectItem value="Follow-up">Follow-up</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Date</label>
                       <Popover>
                         <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal mt-1",
-                              !nextActionDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
+                          <Button variant="outline" className="w-full justify-start text-left">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {nextActionDateInput ? format(nextActionDateInput, "PPP") : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0">
                           <CalendarComponent
                             mode="single"
-                            selected={nextActionDate}
-                            onSelect={setNextActionDate}
+                            selected={nextActionDateInput}
+                            onSelect={setNextActionDateInput}
                             initialFocus
-                            className="p-3 pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
                     </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Time</label>
-                      <Input
-                        type="time"
-                        value={nextActionTime}
-                        onChange={(e) => setNextActionTime(e.target.value)}
-                        className="mt-1"
-                      />
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleScheduleNextAction} size="sm">
+                        <Save className="w-4 h-4 mr-2" />
+                        Save
+                      </Button>
+                      <Button 
+                        onClick={() => setIsEditingNextAction(false)} 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
                     </div>
-                  </>
-                ) : (
-                  customer.nextActionDate && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Due Date</label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-800">{customer.nextActionDate}</span>
-                      </div>
-                    </div>
-                  )
+                  </div>
                 )}
-                
-                <Button 
-                  className="w-full mt-4" 
-                  onClick={handleScheduleNextAction}
-                >
-                  {isEditingNextAction ? "Save Next Action" : "Schedule Next Action"}
-                </Button>
               </CardContent>
             </Card>
 
-            {/* Suggested Properties - moved from left column */}
+            {/* Suggested Properties */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Home className="w-5 h-5" />
-                    Suggested properties
-                  </CardTitle>
-                  <Badge className="bg-accent text-accent-foreground text-xs px-2 py-1">
-                    2 new found
-                  </Badge>
-                </div>
+                <CardTitle>Suggested properties</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {suggestedProperties.map((property) => (
-                  <div
-                    key={property.id}
-                    className="group border border-border rounded-lg p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => {
-                      // Navigate to property details - placeholder for now
-                      console.log(`Navigate to property ${property.id}`);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-medium text-foreground">{property.propertyType}</h4>
-                          <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <CardContent>
+                <div className="space-y-3">
+                  {suggestedProperties.map((property) => (
+                    <div key={property.id} className="p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium">{property.propertyType}</p>
+                          <p className="text-sm text-gray-600">{property.location}</p>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                          <div className="flex items-center gap-1">
-                            <Bed className="w-3 h-3" />
-                            <span>{property.bedrooms} bed</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Bath className="w-3 h-3" />
-                            <span>{property.bathrooms} bath</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          <span>{property.location}</span>
-                        </div>
+                        <p className="font-semibold text-green-600">€{property.price.toLocaleString()}</p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-foreground">
-                          €{property.price.toLocaleString()}
-                        </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <span>{property.bedrooms} bed</span>
+                        <span>{property.bathrooms} bath</span>
                       </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => {
+                          // In a real app, this would navigate to property details
+                          console.log("Navigate to property", property.id);
+                        }}
+                      >
+                        View Property
+                      </Button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>

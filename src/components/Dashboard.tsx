@@ -67,7 +67,10 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
       <AddClientForm 
         onSave={handleSaveClient}
         onCancel={handleCancelClient}
-        initialData={formData}
+        initialData={{
+          fullName: "John Doe",
+          location: "Downtown"
+        }}
       />
     );
   }
