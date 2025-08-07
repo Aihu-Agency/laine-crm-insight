@@ -1,22 +1,21 @@
 import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer } from '@/types/airtable'
-
-const API_BASE_URL = '/api/airtable-proxy'
+import { supabase } from '@/lib/supabase'
 
 class AirtableApiService {
-  private async makeRequest(endpoint: string, options: RequestInit = {}) {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
+  private async makeRequest(endpoint: string, options: { method?: string; body?: any } = {}) {
+    const { data, error } = await supabase.functions.invoke('airtable-proxy', {
+      body: {
+        endpoint,
+        method: options.method || 'GET',
+        data: options.body ? JSON.parse(options.body) : undefined
+      }
     })
 
-    if (!response.ok) {
-      throw new Error(`Airtable API error: ${response.status} ${response.statusText}`)
+    if (error) {
+      throw new Error(`Airtable API error: ${error.message}`)
     }
 
-    return response.json()
+    return data
   }
 
   async getCustomers(): Promise<Customer[]> {
@@ -87,7 +86,7 @@ class AirtableApiService {
 
       const record: AirtableCustomer = await this.makeRequest('/customers', {
         method: 'POST',
-        body: JSON.stringify(airtableFields),
+        body: airtableFields,
       })
 
       return transformAirtableCustomer(record)
@@ -135,7 +134,7 @@ class AirtableApiService {
 
       const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify(airtableFields),
+        body: airtableFields,
       })
 
       return transformAirtableCustomer(record)
