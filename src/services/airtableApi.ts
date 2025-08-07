@@ -84,9 +84,10 @@ class AirtableApiService {
         'Customer number': nextCustomerNumber,
       }
 
-      // Remove undefined values to avoid Airtable errors
+      // Remove undefined values and empty strings to avoid Airtable errors
       Object.keys(airtableFields).forEach(key => {
-        if (airtableFields[key as keyof typeof airtableFields] === undefined) {
+        const value = airtableFields[key as keyof typeof airtableFields]
+        if (value === undefined || value === '') {
           delete airtableFields[key as keyof typeof airtableFields]
         }
       })
@@ -131,9 +132,10 @@ class AirtableApiService {
         'Customer number': customerData.customerNumber,
       }
 
-      // Remove undefined values
+      // Remove undefined values and empty strings
       Object.keys(airtableFields).forEach(key => {
-        if (airtableFields[key as keyof typeof airtableFields] === undefined) {
+        const value = airtableFields[key as keyof typeof airtableFields]
+        if (value === undefined || value === '') {
           delete airtableFields[key as keyof typeof airtableFields]
         }
       })
