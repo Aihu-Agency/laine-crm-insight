@@ -32,7 +32,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     lastName: initialData?.lastName || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
-    phase: initialData?.phase || 'New Lead',
+    
     language: initialData?.language || '',
     customerType: initialData?.customerType || '',
     customerCategory: initialData?.customerCategory || '',
@@ -46,7 +46,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     salesperson: initialData?.salesperson || '',
     sourceOfContact: initialData?.sourceOfContact || '',
     notes: initialData?.notes || '',
-    nextActionType: initialData?.nextActionType || '',
+    
     nextActionNote: initialData?.nextActionNote || '',
   });
 
@@ -54,6 +54,9 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
   );
   const [propertyTypes, setPropertyTypes] = useState<string[]>(initialData?.propertyType || []);
+  const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(
+    initialData?.areasOfInterest ? initialData.areasOfInterest.split(', ') : []
+  );
   const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
   const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
 
@@ -105,6 +108,14 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     }
   };
 
+  const handleAreaChange = (area: string, checked: boolean) => {
+    if (checked) {
+      setAreasOfInterestList([...areasOfInterestList, area]);
+    } else {
+      setAreasOfInterestList(areasOfInterestList.filter(a => a !== area));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -113,14 +124,14 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      phase: formData.phase,
+      
       language: formData.language,
       customerType: formData.customerType,
       customerCategory: formData.customerCategory,
       timeOfPurchase: formData.timeOfPurchase,
       minPrice: formData.minPrice,
       maxPrice: formData.maxPrice,
-      areasOfInterest: formData.areasOfInterest,
+      areasOfInterest: areasOfInterestList.join(', '),
       mustHave: formData.mustHave,
       niceToHave: formData.niceToHave,
       neighborhoodOrAddress: formData.neighborhoodOrAddress,
@@ -130,7 +141,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       bedrooms,
       bathrooms,
       notes: formData.notes,
-      nextActionType: formData.nextActionType,
+      
       nextActionNote: formData.nextActionNote,
       nextActionDate: nextActionDate ? format(nextActionDate, 'yyyy-MM-dd') : undefined,
     };
@@ -143,6 +154,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   };
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"];
+  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Other"];
   const bedroomOptions = [1, 2, 3, 4, 5];
   const bathroomOptions = [1, 2, 3, 4];
 
@@ -213,29 +225,18 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                       <SelectContent>
                         <SelectItem value="Finnish">Finnish</SelectItem>
                         <SelectItem value="English">English</SelectItem>
-                        <SelectItem value="Swedish">Swedish</SelectItem>
                         <SelectItem value="Spanish">Spanish</SelectItem>
-                        <SelectItem value="French">French</SelectItem>
-                        <SelectItem value="German">German</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="sourceOfContact">Source of Contact</Label>
-                    <Select value={formData.sourceOfContact} onValueChange={(value) => setFormData({...formData, sourceOfContact: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Website">Website</SelectItem>
-                        <SelectItem value="Referral">Referral</SelectItem>
-                        <SelectItem value="Social Media">Social Media</SelectItem>
-                        <SelectItem value="Advertisement">Advertisement</SelectItem>
-                        <SelectItem value="Walk-in">Walk-in</SelectItem>
-                        <SelectItem value="Phone">Phone</SelectItem>
-                        <SelectItem value="Email">Email</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input 
+                      id="sourceOfContact" 
+                      value={formData.sourceOfContact}
+                      onChange={(e) => setFormData({...formData, sourceOfContact: e.target.value})}
+                      placeholder="Enter source of contact"
+                    />
                   </div>
                 </div>
               </div>
@@ -247,22 +248,6 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="phase">Phase</Label>
-                    <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select phase" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="New Lead">New Lead</SelectItem>
-                        <SelectItem value="Qualified Lead">Qualified Lead</SelectItem>
-                        <SelectItem value="Opportunity">Opportunity</SelectItem>
-                        <SelectItem value="Proposal">Proposal</SelectItem>
-                        <SelectItem value="Closed Won">Closed Won</SelectItem>
-                        <SelectItem value="Closed Lost">Closed Lost</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="customerType">Customer Type</Label>
                     <Select value={formData.customerType} onValueChange={(value) => setFormData({...formData, customerType: value})}>
                       <SelectTrigger>
@@ -270,9 +255,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Buyer">Buyer</SelectItem>
-                        <SelectItem value="Seller">Seller</SelectItem>
                         <SelectItem value="Renter">Renter</SelectItem>
-                        <SelectItem value="Investor">Investor</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -283,12 +266,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="First-time buyer">First-time buyer</SelectItem>
-                        <SelectItem value="Experienced buyer">Experienced buyer</SelectItem>
                         <SelectItem value="Investor">Investor</SelectItem>
-                        <SelectItem value="Relocating">Relocating</SelectItem>
-                        <SelectItem value="Downsizing">Downsizing</SelectItem>
-                        <SelectItem value="Upsizing">Upsizing</SelectItem>
+                        <SelectItem value="Holiday home">Holiday home</SelectItem>
+                        <SelectItem value="Primary residence">Primary residence</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -299,12 +280,11 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                         <SelectValue placeholder="Select timeframe" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Immediately">Immediately</SelectItem>
-                        <SelectItem value="Within 3 months">Within 3 months</SelectItem>
+                        <SelectItem value="1-3 months">1-3 months</SelectItem>
                         <SelectItem value="3-6 months">3-6 months</SelectItem>
                         <SelectItem value="6-12 months">6-12 months</SelectItem>
-                        <SelectItem value="Over 1 year">Over 1 year</SelectItem>
-                        <SelectItem value="Just browsing">Just browsing</SelectItem>
+                        <SelectItem value="Later">Later</SelectItem>
+                        <SelectItem value="Property shown">Property shown</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -352,13 +332,19 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="areasOfInterest">Areas of Interest</Label>
-                    <Input 
-                      id="areasOfInterest" 
-                      value={formData.areasOfInterest}
-                      onChange={(e) => setFormData({...formData, areasOfInterest: e.target.value})}
-                      placeholder="e.g., Helsinki, Espoo, Vantaa"
-                    />
+                    <Label>Areas of Interest</Label>
+                    <div className="flex flex-wrap gap-4">
+                      {areaOptions.map((area) => (
+                        <div key={area} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`area-${area}`}
+                            checked={areasOfInterestList.includes(area)}
+                            onCheckedChange={(checked) => handleAreaChange(area, checked as boolean)}
+                          />
+                          <Label htmlFor={`area-${area}`}>{area}</Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="neighborhoodOrAddress">Neighborhood or Address</Label>
@@ -466,59 +452,40 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nextActionType">Next Action Type</Label>
-                      <Select value={formData.nextActionType} onValueChange={(value) => setFormData({...formData, nextActionType: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select action type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Phone Call">Phone Call</SelectItem>
-                          <SelectItem value="Email">Email</SelectItem>
-                          <SelectItem value="Property Viewing">Property Viewing</SelectItem>
-                          <SelectItem value="Meeting">Meeting</SelectItem>
-                          <SelectItem value="Follow-up">Follow-up</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Next Action Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !nextActionDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={nextActionDate}
-                            onSelect={setNextActionDate}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Next Action Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !nextActionDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {nextActionDate ? format(nextActionDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={nextActionDate}
+                          onSelect={setNextActionDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="nextActionNote">Next Action Note</Label>
-                    <Textarea 
+                    <Input 
                       id="nextActionNote" 
                       value={formData.nextActionNote}
                       onChange={(e) => setFormData({...formData, nextActionNote: e.target.value})}
                       placeholder="Additional details about the next action"
-                      rows={3}
                     />
                   </div>
                 </div>
