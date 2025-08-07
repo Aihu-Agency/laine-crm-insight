@@ -87,6 +87,13 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
   const pendingActions = actions.filter(action => !action.completed);
   const completedActions = actions.filter(action => action.completed);
 
+  // Helper function to safely format dates
+  const formatActionDate = (dateString: string) => {
+    if (!dateString) return "No date set";
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? "Invalid date" : format(date, "PPP");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -179,7 +186,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
                           <span className="font-medium">{action.actionDescription}</span>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
-                          Due: {format(new Date(action.actionDate), "PPP")}
+                          Due: {formatActionDate(action.actionDate)}
                         </p>
                       </div>
                       <Button
@@ -211,7 +218,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
                           <Badge variant="secondary" className="ml-2">Done</Badge>
                         </div>
                         <p className="text-sm text-green-600 mt-1">
-                          Completed: {format(new Date(action.actionDate), "PPP")}
+                          Completed: {formatActionDate(action.actionDate)}
                         </p>
                       </div>
                     </div>
