@@ -49,11 +49,21 @@ serve(async (req) => {
     const url = new URL(req.url)
     const path = url.pathname.replace('/airtable-proxy', '')
 
+    console.log(`[Airtable Proxy] ${method} request to path: ${path}`)
+
     // Get Airtable credentials from Supabase secrets
     const AIRTABLE_API_KEY = Deno.env.get('AIRTABLE_API_KEY')
     const AIRTABLE_BASE_ID = Deno.env.get('AIRTABLE_BASE_ID')
 
+    console.log('[Airtable Proxy] Credentials check:', {
+      hasApiKey: !!AIRTABLE_API_KEY,
+      hasBaseId: !!AIRTABLE_BASE_ID,
+      apiKeyLength: AIRTABLE_API_KEY?.length || 0,
+      baseIdLength: AIRTABLE_BASE_ID?.length || 0
+    })
+
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
+      console.error('[Airtable Proxy] Missing credentials')
       return new Response(
         JSON.stringify({ error: 'Airtable credentials not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,6 +88,7 @@ serve(async (req) => {
       } else if (method === 'POST') {
         // Create new customer
         const body = await req.json()
+        console.log('[Airtable Proxy] Creating customer with data:', body)
         const response = await fetch(airtableUrl, {
           method: 'POST',
           headers: airtableHeaders,
@@ -85,7 +96,19 @@ serve(async (req) => {
             fields: body
           })
         })
+        
+        console.log('[Airtable Proxy] Airtable response status:', response.status)
         const data = await response.json()
+        console.log('[Airtable Proxy] Airtable response data:', data)
+        
+        if (!response.ok) {
+          console.error('[Airtable Proxy] Airtable API error:', data)
+          return new Response(JSON.stringify(data), {
+            status: response.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+        
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -109,20 +132,32 @@ serve(async (req) => {
     }
 
     // Forward the request to Airtable
+    console.log('[Airtable Proxy] Forwarding request to:', airtableUrl)
     const response = await fetch(airtableUrl, {
       method,
       headers: airtableHeaders
     })
 
+    console.log('[Airtable Proxy] Response status:', response.status)
     const data = await response.json()
+    console.log('[Airtable Proxy] Response data:', data)
+    
+    if (!response.ok) {
+      console.error('[Airtable Proxy] Airtable API error:', data)
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
+    console.error('[Airtable Proxy] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
