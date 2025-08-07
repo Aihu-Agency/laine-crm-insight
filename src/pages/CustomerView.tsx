@@ -15,6 +15,7 @@ import { airtableApi } from "@/services/airtableApi";
 import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
+import { CustomerActionsCard } from "@/components/CustomerActionsCard";
 
 const CustomerView = () => {
   const { id } = useParams<{ id: string }>();
@@ -336,6 +337,9 @@ const CustomerView = () => {
 
           {/* Right column */}
           <div className="space-y-6">
+            {/* Customer Actions */}
+            <CustomerActionsCard customerId={id!} />
+
             {/* Next Actions */}
             <Card>
               <CardHeader>

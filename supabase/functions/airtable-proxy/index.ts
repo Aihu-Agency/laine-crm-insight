@@ -123,7 +123,74 @@ serve(async (req) => {
     let airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers`
     
     // Handle different endpoints
-    if (path.startsWith('/customers')) {
+    if (path.startsWith('/customer-actions')) {
+      // Handle customer actions endpoints
+      airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customer%20Actions`
+      
+      if (actualMethod === 'GET') {
+        // Handle filtering for customer actions
+        const urlObj = new URL(req.url)
+        const filterByFormula = urlObj.searchParams.get('filterByFormula')
+        if (filterByFormula) {
+          airtableUrl += `?filterByFormula=${encodeURIComponent(filterByFormula)}`
+        }
+        
+        // Get specific action by ID
+        const actionId = path.split('/')[2]
+        if (actionId && !filterByFormula) {
+          airtableUrl += `/${actionId}`
+        }
+      } else if (actualMethod === 'POST') {
+        // Create new customer action
+        console.log('[Airtable Proxy] Creating customer action with data:', requestBody)
+        const response = await fetch(airtableUrl, {
+          method: 'POST',
+          headers: airtableHeaders,
+          body: JSON.stringify({
+            fields: requestBody
+          })
+        })
+        
+        console.log('[Airtable Proxy] Airtable response status:', response.status)
+        const data = await response.json()
+        console.log('[Airtable Proxy] Airtable response data:', data)
+        
+        if (!response.ok) {
+          console.error('[Airtable Proxy] Airtable API error:', data)
+          console.error('[Airtable Proxy] Failed request data was:', requestBody)
+          console.error('[Airtable Proxy] Response status:', response.status)
+          return new Response(JSON.stringify({
+            error: 'Failed to create customer action',
+            details: data,
+            requestData: requestBody,
+            airtableError: true,
+            status: response.status
+          }), {
+            status: response.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+        
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } else if (actualMethod === 'PATCH') {
+        // Update customer action (mark as completed)
+        const actionId = path.split('/')[2]
+        airtableUrl += `/${actionId}`
+        const response = await fetch(airtableUrl, {
+          method: 'PATCH',
+          headers: airtableHeaders,
+          body: JSON.stringify({
+            fields: requestBody
+          })
+        })
+        const data = await response.json()
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    } else if (path.startsWith('/customers')) {
       if (actualMethod === 'GET') {
         // Get all customers or a specific customer
         const customerId = path.split('/')[2]

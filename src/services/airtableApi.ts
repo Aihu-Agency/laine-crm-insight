@@ -1,4 +1,4 @@
-import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer } from '@/types/airtable'
+import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer, CustomerAction, AirtableCustomerActionResponse, AirtableCustomerAction, transformAirtableCustomerAction } from '@/types/airtable'
 import { supabase } from '@/integrations/supabase/client'
 
 class AirtableApiService {
@@ -148,6 +148,55 @@ class AirtableApiService {
       return transformAirtableCustomer(record)
     } catch (error) {
       console.error('Error updating customer:', error)
+      throw error
+    }
+  }
+
+  // Customer Actions methods
+  async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
+    try {
+      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?filterByFormula=FIND("${customerId}",{Customer number})`)
+      return data.records.map(transformAirtableCustomerAction)
+    } catch (error) {
+      console.error('Error fetching customer actions:', error)
+      throw error
+    }
+  }
+
+  async createCustomerAction(customerId: string, actionData: { actionDescription: string; actionDate: string }): Promise<CustomerAction> {
+    try {
+      const airtableFields = {
+        'Customer number': [customerId],
+        'Action Description': actionData.actionDescription,
+        'Action Date': actionData.actionDate,
+      }
+
+      const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
+        method: 'POST',
+        body: airtableFields,
+      })
+
+      return transformAirtableCustomerAction(record)
+    } catch (error) {
+      console.error('Error creating customer action:', error)
+      throw error
+    }
+  }
+
+  async markActionAsCompleted(actionId: string): Promise<CustomerAction> {
+    try {
+      const airtableFields = {
+        'Completed': 'Done'
+      }
+
+      const record: AirtableCustomerAction = await this.makeRequest(`/customer-actions/${actionId}`, {
+        method: 'PATCH',
+        body: airtableFields,
+      })
+
+      return transformAirtableCustomerAction(record)
+    } catch (error) {
+      console.error('Error marking action as completed:', error)
       throw error
     }
   }

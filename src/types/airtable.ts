@@ -67,6 +67,45 @@ export interface Customer {
 }
 
 // Transform Airtable record to our Customer interface
+// Customer Action interfaces
+export interface AirtableCustomerAction {
+  id: string
+  fields: {
+    'Customer Action': number
+    'Customer number': string[]
+    'Action Description': string
+    'Completed': 'Done' | undefined
+    'Action Date': string
+  }
+  createdTime: string
+}
+
+export interface AirtableCustomerActionResponse {
+  records: AirtableCustomerAction[]
+  offset?: string
+}
+
+export interface CustomerAction {
+  id: string
+  customerActionNumber: number
+  customerNumber: string[]
+  actionDescription: string
+  completed: boolean
+  actionDate: string
+  createdTime: string
+}
+
+// Transform Airtable customer action record to our CustomerAction interface
+export const transformAirtableCustomerAction = (record: AirtableCustomerAction): CustomerAction => ({
+  id: record.id,
+  customerActionNumber: record.fields['Customer Action'],
+  customerNumber: record.fields['Customer number'],
+  actionDescription: record.fields['Action Description'],
+  completed: record.fields['Completed'] === 'Done',
+  actionDate: record.fields['Action Date'],
+  createdTime: record.createdTime
+})
+
 export const transformAirtableCustomer = (record: AirtableCustomer): Customer => ({
   id: record.id,
   firstName: record.fields['First name'] || '',
