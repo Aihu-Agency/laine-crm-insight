@@ -68,8 +68,9 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         onSave={handleSaveClient}
         onCancel={handleCancelClient}
         initialData={{
-          fullName: "John Doe",
-          location: "Downtown"
+          firstName: formData.firstName || "John",
+          lastName: formData.lastName || "Doe",
+          areasOfInterest: formData.areaOfInterest || "Downtown"
         }}
       />
     );

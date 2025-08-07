@@ -8,13 +8,23 @@ const corsHeaders = {
 interface AirtableRecord {
   id: string
   fields: {
-    'Full Name': string
-    'Phone': string
+    'First name': string
+    'Last name': string
+    'Phone number': string
     'Email': string
     'Phase': string
-    'Location': string
-    'Budget Range': string
+    'Language': string
+    'Customer type': string
+    'Customer category': string
+    'Time of purchase': string
+    'Min price': number
+    'Max price': number
+    'Areas of interest': string
+    'Must have': string
+    'Nice to have': string
+    'Neighborhood or address': string
     'Salesperson': string
+    'Source of contact': string
     'Last Contact': string
     'Property Type': string[]
     'Bedrooms': number
@@ -22,7 +32,9 @@ interface AirtableRecord {
     'Notes': string
     'Next Action Date': string
     'Next Action Type': string
+    'Next Action Note': string
     'Tags': string[]
+    'Customer number': number
   }
 }
 

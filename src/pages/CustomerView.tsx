@@ -182,7 +182,7 @@ const CustomerView = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">{customerData.fullName}</h1>
+              <h1 className="text-2xl font-bold text-gray-800">{customerData.firstName} {customerData.lastName}</h1>
               <div className="flex items-center gap-2 mt-1">
                 <Badge className={`${getPhaseColor(customerData.phase)} border`}>
                   {customerData.phase}
@@ -235,14 +235,14 @@ const CustomerView = () => {
                     <p className="text-sm text-gray-500">Location</p>
                     <p className="font-medium flex items-center">
                       <MapPin className="w-4 h-4 mr-2" />
-                      {customerData.location || 'Not specified'}
+                      {customerData.areasOfInterest || 'Not specified'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Budget Range</p>
                     <p className="font-medium flex items-center">
                       <DollarSign className="w-4 h-4 mr-2" />
-                      {customerData.budgetRange || 'Not specified'}
+                      {customerData.minPrice && customerData.maxPrice ? `€${customerData.minPrice.toLocaleString()} - €${customerData.maxPrice.toLocaleString()}` : customerData.minPrice ? `€${customerData.minPrice.toLocaleString()}+` : customerData.maxPrice ? `Up to €${customerData.maxPrice.toLocaleString()}` : 'Not specified'}
                     </p>
                   </div>
                   <div>

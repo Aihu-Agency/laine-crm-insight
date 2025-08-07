@@ -28,16 +28,26 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    firstName: initialData?.fullName?.split(' ')[0] || '',
-    lastName: initialData?.fullName?.split(' ').slice(1).join(' ') || '',
+    firstName: initialData?.firstName || '',
+    lastName: initialData?.lastName || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     phase: initialData?.phase || 'New Lead',
-    location: initialData?.location || '',
-    budgetRange: initialData?.budgetRange || '',
+    language: initialData?.language || '',
+    customerType: initialData?.customerType || '',
+    customerCategory: initialData?.customerCategory || '',
+    timeOfPurchase: initialData?.timeOfPurchase || '',
+    minPrice: initialData?.minPrice || undefined as number | undefined,
+    maxPrice: initialData?.maxPrice || undefined as number | undefined,
+    areasOfInterest: initialData?.areasOfInterest || '',
+    mustHave: initialData?.mustHave || '',
+    niceToHave: initialData?.niceToHave || '',
+    neighborhoodOrAddress: initialData?.neighborhoodOrAddress || '',
     salesperson: initialData?.salesperson || '',
+    sourceOfContact: initialData?.sourceOfContact || '',
     notes: initialData?.notes || '',
     nextActionType: initialData?.nextActionType || '',
+    nextActionNote: initialData?.nextActionNote || '',
   });
 
   const [nextActionDate, setNextActionDate] = useState<Date | undefined>(
@@ -99,18 +109,29 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     e.preventDefault();
     
     const customerData: Partial<Customer> = {
-      fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
       phase: formData.phase,
-      location: formData.location,
-      budgetRange: formData.budgetRange,
+      language: formData.language,
+      customerType: formData.customerType,
+      customerCategory: formData.customerCategory,
+      timeOfPurchase: formData.timeOfPurchase,
+      minPrice: formData.minPrice,
+      maxPrice: formData.maxPrice,
+      areasOfInterest: formData.areasOfInterest,
+      mustHave: formData.mustHave,
+      niceToHave: formData.niceToHave,
+      neighborhoodOrAddress: formData.neighborhoodOrAddress,
       salesperson: formData.salesperson,
+      sourceOfContact: formData.sourceOfContact,
       propertyType: propertyTypes,
       bedrooms,
       bathrooms,
       notes: formData.notes,
       nextActionType: formData.nextActionType,
+      nextActionNote: formData.nextActionNote,
       nextActionDate: nextActionDate ? format(nextActionDate, 'yyyy-MM-dd') : undefined,
     };
 
@@ -184,6 +205,48 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="language">Language</Label>
+                    <Select value={formData.language} onValueChange={(value) => setFormData({...formData, language: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Finnish">Finnish</SelectItem>
+                        <SelectItem value="English">English</SelectItem>
+                        <SelectItem value="Swedish">Swedish</SelectItem>
+                        <SelectItem value="Spanish">Spanish</SelectItem>
+                        <SelectItem value="French">French</SelectItem>
+                        <SelectItem value="German">German</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sourceOfContact">Source of Contact</Label>
+                    <Select value={formData.sourceOfContact} onValueChange={(value) => setFormData({...formData, sourceOfContact: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Website">Website</SelectItem>
+                        <SelectItem value="Referral">Referral</SelectItem>
+                        <SelectItem value="Social Media">Social Media</SelectItem>
+                        <SelectItem value="Advertisement">Advertisement</SelectItem>
+                        <SelectItem value="Walk-in">Walk-in</SelectItem>
+                        <SelectItem value="Phone">Phone</SelectItem>
+                        <SelectItem value="Email">Email</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Details */}
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Customer Details</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="phase">Phase</Label>
                     <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
                       <SelectTrigger>
@@ -196,6 +259,52 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                         <SelectItem value="Proposal">Proposal</SelectItem>
                         <SelectItem value="Closed Won">Closed Won</SelectItem>
                         <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerType">Customer Type</Label>
+                    <Select value={formData.customerType} onValueChange={(value) => setFormData({...formData, customerType: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select customer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Buyer">Buyer</SelectItem>
+                        <SelectItem value="Seller">Seller</SelectItem>
+                        <SelectItem value="Renter">Renter</SelectItem>
+                        <SelectItem value="Investor">Investor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerCategory">Customer Category</Label>
+                    <Select value={formData.customerCategory} onValueChange={(value) => setFormData({...formData, customerCategory: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="First-time buyer">First-time buyer</SelectItem>
+                        <SelectItem value="Experienced buyer">Experienced buyer</SelectItem>
+                        <SelectItem value="Investor">Investor</SelectItem>
+                        <SelectItem value="Relocating">Relocating</SelectItem>
+                        <SelectItem value="Downsizing">Downsizing</SelectItem>
+                        <SelectItem value="Upsizing">Upsizing</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="timeOfPurchase">Time of Purchase</Label>
+                    <Select value={formData.timeOfPurchase} onValueChange={(value) => setFormData({...formData, timeOfPurchase: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timeframe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Immediately">Immediately</SelectItem>
+                        <SelectItem value="Within 3 months">Within 3 months</SelectItem>
+                        <SelectItem value="3-6 months">3-6 months</SelectItem>
+                        <SelectItem value="6-12 months">6-12 months</SelectItem>
+                        <SelectItem value="Over 1 year">Over 1 year</SelectItem>
+                        <SelectItem value="Just browsing">Just browsing</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -216,28 +325,48 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                 </div>
               </div>
 
-              {/* Location and Budget */}
+              {/* Budget & Location */}
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Location & Budget</h3>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Budget & Location</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="minPrice">Min Price (€)</Label>
                     <Input 
-                      id="location" 
-                      value={formData.location}
-                      onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      placeholder="Enter preferred location"
+                      id="minPrice" 
+                      type="number"
+                      value={formData.minPrice || ''}
+                      onChange={(e) => setFormData({...formData, minPrice: e.target.value ? parseInt(e.target.value) : undefined})}
+                      placeholder="e.g., 300000"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="budgetRange">Budget Range</Label>
+                    <Label htmlFor="maxPrice">Max Price (€)</Label>
                     <Input 
-                      id="budgetRange" 
-                      value={formData.budgetRange}
-                      onChange={(e) => setFormData({...formData, budgetRange: e.target.value})}
-                      placeholder="e.g., €300k - €400k"
+                      id="maxPrice" 
+                      type="number"
+                      value={formData.maxPrice || ''}
+                      onChange={(e) => setFormData({...formData, maxPrice: e.target.value ? parseInt(e.target.value) : undefined})}
+                      placeholder="e.g., 500000"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="areasOfInterest">Areas of Interest</Label>
+                    <Input 
+                      id="areasOfInterest" 
+                      value={formData.areasOfInterest}
+                      onChange={(e) => setFormData({...formData, areasOfInterest: e.target.value})}
+                      placeholder="e.g., Helsinki, Espoo, Vantaa"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="neighborhoodOrAddress">Neighborhood or Address</Label>
+                    <Input 
+                      id="neighborhoodOrAddress" 
+                      value={formData.neighborhoodOrAddress}
+                      onChange={(e) => setFormData({...formData, neighborhoodOrAddress: e.target.value})}
+                      placeholder="Specific neighborhood or address preferences"
                     />
                   </div>
                 </div>
@@ -292,6 +421,29 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="mustHave">Must Have</Label>
+                      <Textarea 
+                        id="mustHave" 
+                        value={formData.mustHave}
+                        onChange={(e) => setFormData({...formData, mustHave: e.target.value})}
+                        placeholder="Required features (e.g., balcony, parking, elevator)"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="niceToHave">Nice to Have</Label>
+                      <Textarea 
+                        id="niceToHave" 
+                        value={formData.niceToHave}
+                        onChange={(e) => setFormData({...formData, niceToHave: e.target.value})}
+                        placeholder="Desired features (e.g., sauna, garden, sea view)"
+                        rows={3}
+                      />
                     </div>
                   </div>
                 </div>
@@ -357,6 +509,17 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                         </PopoverContent>
                       </Popover>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nextActionNote">Next Action Note</Label>
+                    <Textarea 
+                      id="nextActionNote" 
+                      value={formData.nextActionNote}
+                      onChange={(e) => setFormData({...formData, nextActionNote: e.target.value})}
+                      placeholder="Additional details about the next action"
+                      rows={3}
+                    />
                   </div>
                 </div>
               </div>

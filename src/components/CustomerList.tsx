@@ -55,7 +55,7 @@ const CustomerList = () => {
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-center">
                <div className="font-medium text-gray-800">
-                 {customer.fullName}
+                 {customer.firstName} {customer.lastName}
                </div>
               
               <div>
@@ -65,11 +65,11 @@ const CustomerList = () => {
               </div>
               
                <div className="text-sm text-gray-600">
-                 {customer.location || 'Not specified'}
+                 {customer.areasOfInterest || 'Not specified'}
                </div>
               
                <div className="text-sm text-gray-600">
-                 {customer.budgetRange || 'Not specified'}
+                 {customer.minPrice && customer.maxPrice ? `€${customer.minPrice.toLocaleString()} - €${customer.maxPrice.toLocaleString()}` : customer.minPrice ? `€${customer.minPrice.toLocaleString()}+` : customer.maxPrice ? `Up to €${customer.maxPrice.toLocaleString()}` : 'Not specified'}
                </div>
               
                <div className="text-sm text-gray-600">

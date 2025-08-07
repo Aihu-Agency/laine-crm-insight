@@ -41,14 +41,33 @@ class AirtableApiService {
 
   async createCustomer(customerData: Partial<Customer>): Promise<Customer> {
     try {
+      // Get next customer number
+      const customers = await this.getCustomers();
+      const customerNumbers = customers
+        .map(c => c.customerNumber)
+        .filter(num => num !== undefined && num !== null) as number[];
+      const nextCustomerNumber = customerNumbers.length > 0 
+        ? Math.max(...customerNumbers) + 1 
+        : 1001;
+
       const airtableFields = {
-        'Full Name': customerData.fullName || '',
-        'Phone': customerData.phone,
+        'First name': customerData.firstName || '',
+        'Last name': customerData.lastName || '',
+        'Phone number': customerData.phone,
         'Email': customerData.email,
         'Phase': customerData.phase || 'New Lead',
-        'Location': customerData.location,
-        'Budget Range': customerData.budgetRange,
+        'Language': customerData.language,
+        'Customer type': customerData.customerType,
+        'Customer category': customerData.customerCategory,
+        'Time of purchase': customerData.timeOfPurchase,
+        'Min price': customerData.minPrice,
+        'Max price': customerData.maxPrice,
+        'Areas of interest': customerData.areasOfInterest,
+        'Must have': customerData.mustHave,
+        'Nice to have': customerData.niceToHave,
+        'Neighborhood or address': customerData.neighborhoodOrAddress,
         'Salesperson': customerData.salesperson,
+        'Source of contact': customerData.sourceOfContact,
         'Last Contact': customerData.lastContact,
         'Property Type': customerData.propertyType,
         'Bedrooms': customerData.bedrooms,
@@ -56,7 +75,9 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Next Action Date': customerData.nextActionDate,
         'Next Action Type': customerData.nextActionType,
+        'Next Action Note': customerData.nextActionNote,
         'Tags': customerData.tags,
+        'Customer number': nextCustomerNumber,
       }
 
       const record: AirtableCustomer = await this.makeRequest('/customers', {
@@ -74,13 +95,23 @@ class AirtableApiService {
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer> {
     try {
       const airtableFields = {
-        'Full Name': customerData.fullName,
-        'Phone': customerData.phone,
+        'First name': customerData.firstName,
+        'Last name': customerData.lastName,
+        'Phone number': customerData.phone,
         'Email': customerData.email,
         'Phase': customerData.phase,
-        'Location': customerData.location,
-        'Budget Range': customerData.budgetRange,
+        'Language': customerData.language,
+        'Customer type': customerData.customerType,
+        'Customer category': customerData.customerCategory,
+        'Time of purchase': customerData.timeOfPurchase,
+        'Min price': customerData.minPrice,
+        'Max price': customerData.maxPrice,
+        'Areas of interest': customerData.areasOfInterest,
+        'Must have': customerData.mustHave,
+        'Nice to have': customerData.niceToHave,
+        'Neighborhood or address': customerData.neighborhoodOrAddress,
         'Salesperson': customerData.salesperson,
+        'Source of contact': customerData.sourceOfContact,
         'Last Contact': customerData.lastContact,
         'Property Type': customerData.propertyType,
         'Bedrooms': customerData.bedrooms,
@@ -88,7 +119,9 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Next Action Date': customerData.nextActionDate,
         'Next Action Type': customerData.nextActionType,
+        'Next Action Note': customerData.nextActionNote,
         'Tags': customerData.tags,
+        'Customer number': customerData.customerNumber,
       }
 
       // Remove undefined values

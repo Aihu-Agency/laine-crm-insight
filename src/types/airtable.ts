@@ -1,13 +1,23 @@
 export interface AirtableCustomer {
   id: string
   fields: {
-    'Full Name': string
-    'Phone'?: string
+    'First name': string
+    'Last name': string
+    'Phone number'?: string
     'Email'?: string
     'Phase': string
-    'Location'?: string
-    'Budget Range'?: string
+    'Language'?: string
+    'Customer type'?: string
+    'Customer category'?: string
+    'Time of purchase'?: string
+    'Min price'?: number
+    'Max price'?: number
+    'Areas of interest'?: string
+    'Must have'?: string
+    'Nice to have'?: string
+    'Neighborhood or address'?: string
     'Salesperson'?: string
+    'Source of contact'?: string
     'Last Contact'?: string
     'Property Type'?: string[]
     'Bedrooms'?: number
@@ -15,7 +25,9 @@ export interface AirtableCustomer {
     'Notes'?: string
     'Next Action Date'?: string
     'Next Action Type'?: string
+    'Next Action Note'?: string
     'Tags'?: string[]
+    'Customer number'?: number
   }
   createdTime: string
 }
@@ -27,13 +39,23 @@ export interface AirtableResponse {
 
 export interface Customer {
   id: string
-  fullName: string
+  firstName: string
+  lastName: string
   phone?: string
   email?: string
   phase: string
-  location?: string
-  budgetRange?: string
+  language?: string
+  customerType?: string
+  customerCategory?: string
+  timeOfPurchase?: string
+  minPrice?: number
+  maxPrice?: number
+  areasOfInterest?: string
+  mustHave?: string
+  niceToHave?: string
+  neighborhoodOrAddress?: string
   salesperson?: string
+  sourceOfContact?: string
   lastContact?: string
   propertyType?: string[]
   bedrooms?: number
@@ -41,20 +63,32 @@ export interface Customer {
   notes?: string
   nextActionDate?: string
   nextActionType?: string
+  nextActionNote?: string
   tags?: string[]
+  customerNumber?: number
   createdTime: string
 }
 
 // Transform Airtable record to our Customer interface
 export const transformAirtableCustomer = (record: AirtableCustomer): Customer => ({
   id: record.id,
-  fullName: record.fields['Full Name'] || '',
-  phone: record.fields['Phone'],
+  firstName: record.fields['First name'] || '',
+  lastName: record.fields['Last name'] || '',
+  phone: record.fields['Phone number'],
   email: record.fields['Email'],
   phase: record.fields['Phase'] || 'New Lead',
-  location: record.fields['Location'],
-  budgetRange: record.fields['Budget Range'],
+  language: record.fields['Language'],
+  customerType: record.fields['Customer type'],
+  customerCategory: record.fields['Customer category'],
+  timeOfPurchase: record.fields['Time of purchase'],
+  minPrice: record.fields['Min price'],
+  maxPrice: record.fields['Max price'],
+  areasOfInterest: record.fields['Areas of interest'],
+  mustHave: record.fields['Must have'],
+  niceToHave: record.fields['Nice to have'],
+  neighborhoodOrAddress: record.fields['Neighborhood or address'],
   salesperson: record.fields['Salesperson'],
+  sourceOfContact: record.fields['Source of contact'],
   lastContact: record.fields['Last Contact'],
   propertyType: record.fields['Property Type'],
   bedrooms: record.fields['Bedrooms'],
@@ -62,6 +96,8 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   notes: record.fields['Notes'],
   nextActionDate: record.fields['Next Action Date'],
   nextActionType: record.fields['Next Action Type'],
+  nextActionNote: record.fields['Next Action Note'],
   tags: record.fields['Tags'],
+  customerNumber: record.fields['Customer number'],
   createdTime: record.createdTime
 })
