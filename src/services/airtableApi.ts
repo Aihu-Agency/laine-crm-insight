@@ -156,7 +156,10 @@ class AirtableApiService {
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
     try {
       const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?filterByFormula=FIND("${customerId}",{Customer number})`)
-      return data.records.map(transformAirtableCustomerAction)
+      // Filter out actions with empty or missing required fields
+      return data.records
+        .filter(record => record.fields['Action Description'] && record.fields['Action Date'])
+        .map(transformAirtableCustomerAction)
     } catch (error) {
       console.error('Error fetching customer actions:', error)
       throw error
@@ -165,18 +168,42 @@ class AirtableApiService {
 
   async createCustomerAction(customerId: string, actionData: { actionDescription: string; actionDate: string }): Promise<CustomerAction> {
     try {
+      // Try multiple possible field names since Airtable field names can vary
+      const possibleFieldNames = [
+        'Customer number',
+        'Customers',
+        'Customer',
+        'Customer ID',
+        'Customer Number'
+      ];
+
+      // Start with the most likely field name
       const airtableFields = {
-        'Customer number': [customerId],
+        'Customers': [customerId], // Try this first as it's often the default for linked fields
         'Action Description': actionData.actionDescription,
         'Action Date': actionData.actionDate,
       }
 
-      const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
-        method: 'POST',
-        body: airtableFields,
-      })
+      try {
+        const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
+          method: 'POST',
+          body: airtableFields,
+        })
+        return transformAirtableCustomerAction(record)
+      } catch (firstError) {
+        // If first attempt fails, try with 'Customer number'
+        const alternativeFields = {
+          'Customer number': [customerId],
+          'Action Description': actionData.actionDescription,
+          'Action Date': actionData.actionDate,
+        }
 
-      return transformAirtableCustomerAction(record)
+        const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
+          method: 'POST',
+          body: alternativeFields,
+        })
+        return transformAirtableCustomerAction(record)
+      }
     } catch (error) {
       console.error('Error creating customer action:', error)
       throw error

@@ -71,11 +71,11 @@ export interface Customer {
 export interface AirtableCustomerAction {
   id: string
   fields: {
-    'Customer Action': number
-    'Customer number': string[]
-    'Action Description': string
-    'Completed': 'Done' | undefined
-    'Action Date': string
+    'Customer Action'?: number
+    'Customer number'?: string[]
+    'Action Description'?: string
+    'Completed'?: 'Done' | undefined
+    'Action Date'?: string
   }
   createdTime: string
 }
@@ -87,8 +87,8 @@ export interface AirtableCustomerActionResponse {
 
 export interface CustomerAction {
   id: string
-  customerActionNumber: number
-  customerNumber: string[]
+  customerActionNumber?: number
+  customerNumber?: string[]
   actionDescription: string
   completed: boolean
   actionDate: string
@@ -100,9 +100,9 @@ export const transformAirtableCustomerAction = (record: AirtableCustomerAction):
   id: record.id,
   customerActionNumber: record.fields['Customer Action'],
   customerNumber: record.fields['Customer number'],
-  actionDescription: record.fields['Action Description'],
+  actionDescription: record.fields['Action Description'] || '',
   completed: record.fields['Completed'] === 'Done',
-  actionDate: record.fields['Action Date'],
+  actionDate: record.fields['Action Date'] || '',
   createdTime: record.createdTime
 })
 
