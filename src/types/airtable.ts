@@ -15,14 +15,14 @@ export interface AirtableCustomer {
     'Must have'?: string
     'Nice to have'?: string
     'Neighborhood or address'?: string
-    'Sales person'?: string
+    'Salesperson'?: string
     'Source of contact'?: string
-    'Type of apartment'?: string[]
+    'Property Type'?: string[]
     'Bedrooms'?: number
     'Bathrooms'?: number
     'Notes'?: string
     'Next Action Date'?: string
-    'Next Actions'?: string
+    'Next Action Type'?: string
     'Next Action Note'?: string
     'Customer number'?: number
   }
@@ -84,15 +84,15 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   mustHave: record.fields['Must have'],
   niceToHave: record.fields['Nice to have'],
   neighborhoodOrAddress: record.fields['Neighborhood or address'],
-  salesperson: record.fields['Sales person'],
+  salesperson: record.fields['Salesperson'],
   sourceOfContact: record.fields['Source of contact'],
   lastContact: undefined, // Field doesn't exist in Airtable
-  propertyType: record.fields['Type of apartment'],
+  propertyType: record.fields['Property Type'],
   bedrooms: record.fields['Bedrooms'],
   bathrooms: record.fields['Bathrooms'],
   notes: record.fields['Notes'],
   nextActionDate: record.fields['Next Action Date'],
-  nextActionType: record.fields['Next Actions'],
+  nextActionType: record.fields['Next Action Type'],
   nextActionNote: record.fields['Next Action Note'],
   tags: [], // Field doesn't exist in Airtable
   customerNumber: record.fields['Customer number'],

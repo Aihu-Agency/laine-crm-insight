@@ -195,7 +195,15 @@ serve(async (req) => {
         
         if (!response.ok) {
           console.error('[Airtable Proxy] Airtable API error:', data)
-          return new Response(JSON.stringify(data), {
+          console.error('[Airtable Proxy] Failed request data was:', requestBody)
+          console.error('[Airtable Proxy] Response status:', response.status)
+          return new Response(JSON.stringify({
+            error: 'Failed to create customer',
+            details: data,
+            requestData: requestBody,
+            airtableError: true,
+            status: response.status
+          }), {
             status: response.status,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
