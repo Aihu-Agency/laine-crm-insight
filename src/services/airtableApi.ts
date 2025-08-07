@@ -41,14 +41,22 @@ class AirtableApiService {
 
   async createCustomer(customerData: Partial<Customer>): Promise<Customer> {
     try {
-      // Get next customer number
-      const customers = await this.getCustomers();
-      const customerNumbers = customers
-        .map(c => c.customerNumber)
-        .filter(num => num !== undefined && num !== null) as number[];
-      const nextCustomerNumber = customerNumbers.length > 0 
-        ? Math.max(...customerNumbers) + 1 
-        : 1001;
+      // Get next customer number with fallback handling
+      let nextCustomerNumber = 1001; // Default starting number
+      
+      try {
+        const customers = await this.getCustomers();
+        const customerNumbers = customers
+          .map(c => c.customerNumber)
+          .filter(num => num !== undefined && num !== null) as number[];
+        
+        if (customerNumbers.length > 0) {
+          nextCustomerNumber = Math.max(...customerNumbers) + 1;
+        }
+      } catch (error) {
+        console.warn('Could not fetch existing customers for number generation, using default:', error);
+        // nextCustomerNumber remains 1001
+      }
 
       const airtableFields = {
         'First name': customerData.firstName || '',
