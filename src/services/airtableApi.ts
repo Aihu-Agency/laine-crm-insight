@@ -67,23 +67,15 @@ class AirtableApiService {
         'Customer type': customerData.customerType,
         'Customer category': customerData.customerCategory,
         'Time of purchase': customerData.timeOfPurchase,
-        'Min price': customerData.minPrice,
-        'Max price': customerData.maxPrice,
-        'Areas of interest': customerData.areasOfInterest ? [customerData.areasOfInterest] : undefined,
-        'Must have': customerData.mustHave,
-        'Nice to have': customerData.niceToHave,
-        'Neighborhood or address': customerData.neighborhoodOrAddress,
-        'Salesperson': customerData.salesperson,
-        'Source of contact': customerData.sourceOfContact,
-        'Property Type': customerData.propertyType,
-        'Bedrooms': customerData.bedrooms,
-        'Bathrooms': customerData.bathrooms,
-        'Notes': customerData.notes,
-        'Next Action Date': customerData.nextActionDate,
-        'Next Action Type': customerData.nextActionType,
-        'Next Action Note': customerData.nextActionNote,
         'Customer number': nextCustomerNumber,
       }
+
+      // Remove undefined values to avoid Airtable errors
+      Object.keys(airtableFields).forEach(key => {
+        if (airtableFields[key as keyof typeof airtableFields] === undefined) {
+          delete airtableFields[key as keyof typeof airtableFields]
+        }
+      })
 
       const record: AirtableCustomer = await this.makeRequest('/customers', {
         method: 'POST',
@@ -108,21 +100,6 @@ class AirtableApiService {
         'Customer type': customerData.customerType,
         'Customer category': customerData.customerCategory,
         'Time of purchase': customerData.timeOfPurchase,
-        'Min price': customerData.minPrice,
-        'Max price': customerData.maxPrice,
-        'Areas of interest': customerData.areasOfInterest ? [customerData.areasOfInterest] : undefined,
-        'Must have': customerData.mustHave,
-        'Nice to have': customerData.niceToHave,
-        'Neighborhood or address': customerData.neighborhoodOrAddress,
-        'Salesperson': customerData.salesperson,
-        'Source of contact': customerData.sourceOfContact,
-        'Property Type': customerData.propertyType,
-        'Bedrooms': customerData.bedrooms,
-        'Bathrooms': customerData.bathrooms,
-        'Notes': customerData.notes,
-        'Next Action Date': customerData.nextActionDate,
-        'Next Action Type': customerData.nextActionType,
-        'Next Action Note': customerData.nextActionNote,
         'Customer number': customerData.customerNumber,
       }
 
