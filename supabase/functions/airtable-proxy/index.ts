@@ -50,22 +50,84 @@ serve(async (req) => {
     const path = url.pathname.replace('/airtable-proxy', '')
 
     console.log(`[Airtable Proxy] ${method} request to path: ${path}`)
+    console.log('[Airtable Proxy] Full URL:', req.url)
+    console.log('[Airtable Proxy] Request headers:', Object.fromEntries(req.headers.entries()))
 
     // Get Airtable credentials from Supabase secrets
     const AIRTABLE_API_KEY = Deno.env.get('AIRTABLE_API_KEY')
     const AIRTABLE_BASE_ID = Deno.env.get('AIRTABLE_BASE_ID')
 
+    console.log('[Airtable Proxy] Environment variables available:', Object.keys(Deno.env.toObject()))
     console.log('[Airtable Proxy] Credentials check:', {
       hasApiKey: !!AIRTABLE_API_KEY,
       hasBaseId: !!AIRTABLE_BASE_ID,
       apiKeyLength: AIRTABLE_API_KEY?.length || 0,
-      baseIdLength: AIRTABLE_BASE_ID?.length || 0
+      baseIdLength: AIRTABLE_BASE_ID?.length || 0,
+      apiKeyPrefix: AIRTABLE_API_KEY ? AIRTABLE_API_KEY.substring(0, 8) + '...' : 'none',
+      baseIdPrefix: AIRTABLE_BASE_ID ? AIRTABLE_BASE_ID.substring(0, 8) + '...' : 'none'
     })
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-      console.error('[Airtable Proxy] Missing credentials')
+      console.error('[Airtable Proxy] Missing credentials - API Key exists:', !!AIRTABLE_API_KEY, 'Base ID exists:', !!AIRTABLE_BASE_ID)
       return new Response(
-        JSON.stringify({ error: 'Airtable credentials not configured' }),
+        JSON.stringify({ 
+          error: 'Airtable credentials not configured',
+          details: {
+            hasApiKey: !!AIRTABLE_API_KEY,
+            hasBaseId: !!AIRTABLE_BASE_ID,
+            availableEnvVars: Object.keys(Deno.env.toObject())
+          }
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Test Airtable API connectivity first
+    console.log('[Airtable Proxy] Testing Airtable API connectivity...')
+    const testUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers?maxRecords=1`
+    const testHeaders = {
+      'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+    
+    console.log('[Airtable Proxy] Test URL:', testUrl)
+    console.log('[Airtable Proxy] Test headers (without auth):', { 'Content-Type': 'application/json' })
+    
+    try {
+      const testResponse = await fetch(testUrl, {
+        method: 'GET',
+        headers: testHeaders
+      })
+      console.log('[Airtable Proxy] Test response status:', testResponse.status)
+      
+      if (!testResponse.ok) {
+        const testError = await testResponse.text()
+        console.error('[Airtable Proxy] Airtable API test failed:', testError)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Airtable API authentication failed',
+            details: {
+              status: testResponse.status,
+              statusText: testResponse.statusText,
+              response: testError
+            }
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      const testData = await testResponse.json()
+      console.log('[Airtable Proxy] Airtable API test successful, record count:', testData.records?.length || 0)
+    } catch (testError) {
+      console.error('[Airtable Proxy] Airtable API test error:', testError)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to connect to Airtable API',
+          details: {
+            message: testError.message,
+            name: testError.name
+          }
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
