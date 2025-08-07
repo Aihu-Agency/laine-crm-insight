@@ -57,6 +57,15 @@ serve(async (req) => {
     const AIRTABLE_API_KEY = Deno.env.get('AIRTABLE_API_KEY')
     const AIRTABLE_BASE_ID = Deno.env.get('AIRTABLE_BASE_ID')
 
+    console.log('[Airtable Proxy] Environment check:', {
+      hasApiKey: !!AIRTABLE_API_KEY,
+      hasBaseId: !!AIRTABLE_BASE_ID,
+      apiKeyLength: AIRTABLE_API_KEY?.length || 0,
+      baseIdLength: AIRTABLE_BASE_ID?.length || 0,
+      apiKeyStart: AIRTABLE_API_KEY ? AIRTABLE_API_KEY.substring(0, 8) : 'missing',
+      baseIdStart: AIRTABLE_BASE_ID ? AIRTABLE_BASE_ID.substring(0, 8) : 'missing'
+    })
+
     console.log('[Airtable Proxy] Environment variables available:', Object.keys(Deno.env.toObject()))
     console.log('[Airtable Proxy] Credentials check:', {
       hasApiKey: !!AIRTABLE_API_KEY,
