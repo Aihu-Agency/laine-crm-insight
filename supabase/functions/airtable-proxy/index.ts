@@ -46,11 +46,32 @@ serve(async (req) => {
   }
 
   try {
-    const { method } = req
-    const url = new URL(req.url)
-    const path = url.pathname.replace('/airtable-proxy', '')
+    // Parse the request body to get the wrapped data structure
+    let requestBody = null
+    let actualMethod = req.method
+    let actualEndpoint = ''
+    
+    if (req.method === 'POST') {
+      try {
+        requestBody = await req.json()
+        console.log('[Airtable Proxy] Received request body:', requestBody)
+        
+        // Check if this is the wrapped format from the frontend
+        if (requestBody && typeof requestBody === 'object' && 'endpoint' in requestBody && 'method' in requestBody) {
+          actualMethod = requestBody.method
+          actualEndpoint = requestBody.endpoint
+          requestBody = requestBody.data
+          console.log('[Airtable Proxy] Unwrapped request - Method:', actualMethod, 'Endpoint:', actualEndpoint, 'Data:', requestBody)
+        }
+      } catch (e) {
+        console.log('[Airtable Proxy] Could not parse request body as JSON, treating as direct data')
+      }
+    }
 
-    console.log(`[Airtable Proxy] ${method} request to path: ${path}`)
+    const url = new URL(req.url)
+    const path = actualEndpoint || url.pathname.replace('/airtable-proxy', '')
+
+    console.log(`[Airtable Proxy] ${actualMethod} request to path: ${path}`)
     console.log('[Airtable Proxy] Full URL:', req.url)
     console.log('[Airtable Proxy] Request headers:', Object.fromEntries(req.headers.entries()))
 
@@ -151,21 +172,20 @@ serve(async (req) => {
     
     // Handle different endpoints
     if (path.startsWith('/customers')) {
-      if (method === 'GET') {
+      if (actualMethod === 'GET') {
         // Get all customers or a specific customer
         const customerId = path.split('/')[2]
         if (customerId) {
           airtableUrl += `/${customerId}`
         }
-      } else if (method === 'POST') {
-        // Create new customer
-        const body = await req.json()
-        console.log('[Airtable Proxy] Creating customer with data:', body)
+      } else if (actualMethod === 'POST') {
+        // Create new customer - use the unwrapped data
+        console.log('[Airtable Proxy] Creating customer with data:', requestBody)
         const response = await fetch(airtableUrl, {
           method: 'POST',
           headers: airtableHeaders,
           body: JSON.stringify({
-            fields: body
+            fields: requestBody
           })
         })
         
@@ -184,16 +204,15 @@ serve(async (req) => {
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
-      } else if (method === 'PATCH') {
-        // Update existing customer
+      } else if (actualMethod === 'PATCH') {
+        // Update existing customer - use the unwrapped data
         const customerId = path.split('/')[2]
-        const body = await req.json()
         airtableUrl += `/${customerId}`
         const response = await fetch(airtableUrl, {
           method: 'PATCH',
           headers: airtableHeaders,
           body: JSON.stringify({
-            fields: body
+            fields: requestBody
           })
         })
         const data = await response.json()
@@ -206,7 +225,7 @@ serve(async (req) => {
     // Forward the request to Airtable
     console.log('[Airtable Proxy] Forwarding request to:', airtableUrl)
     const response = await fetch(airtableUrl, {
-      method,
+      method: actualMethod,
       headers: airtableHeaders
     })
 
