@@ -20,16 +20,16 @@ interface AirtableRecord {
     'Time of purchase': string
     'Min price': number
     'Max price': number
-    'Areas of interest': string
+    'Areas of interest': string[]
     'Must have': string
     'Nice to have': string
     'Neighborhood or address': string
-    'Salesperson': string
+    'Sales person': string
     'Source of contact': string
     'Last Contact': string
-    'Property Type': string[]
-    'Bedrooms': number
-    'Bathrooms': number
+    'Type of apartment': string[]
+    'Bedrooms': string[]
+    'Bathrooms': string[]
     'Notes': string
     'Next Action Date': string
     'Next Action Type': string
