@@ -1,24 +1,27 @@
 import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer } from '@/types/airtable'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+)
 
 class AirtableApiService {
   private async makeRequest(endpoint: string, options: { method?: string; body?: any } = {}) {
-    const response = await fetch('/api/airtable-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const { data, error } = await supabase.functions.invoke('airtable-proxy', {
+      body: {
         endpoint,
         method: options.method || 'GET',
         data: options.body
-      })
+      }
     })
 
-    if (!response.ok) {
-      throw new Error(`Airtable API error: ${response.status} ${response.statusText}`)
+    if (error) {
+      console.error('Supabase function error:', error)
+      throw new Error(`Airtable API error: ${error.message}`)
     }
 
-    return response.json()
+    return data
   }
 
   async getCustomers(): Promise<Customer[]> {
