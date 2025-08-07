@@ -113,55 +113,7 @@ serve(async (req) => {
       )
     }
 
-    // Test Airtable API connectivity first
-    console.log('[Airtable Proxy] Testing Airtable API connectivity...')
-    const testUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers?maxRecords=1`
-    const testHeaders = {
-      'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
-      'Content-Type': 'application/json'
-    }
-    
-    console.log('[Airtable Proxy] Test URL:', testUrl)
-    console.log('[Airtable Proxy] Test headers (without auth):', { 'Content-Type': 'application/json' })
-    
-    try {
-      const testResponse = await fetch(testUrl, {
-        method: 'GET',
-        headers: testHeaders
-      })
-      console.log('[Airtable Proxy] Test response status:', testResponse.status)
-      
-      if (!testResponse.ok) {
-        const testError = await testResponse.text()
-        console.error('[Airtable Proxy] Airtable API test failed:', testError)
-        return new Response(
-          JSON.stringify({ 
-            error: 'Airtable API authentication failed',
-            details: {
-              status: testResponse.status,
-              statusText: testResponse.statusText,
-              response: testError
-            }
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      const testData = await testResponse.json()
-      console.log('[Airtable Proxy] Airtable API test successful, record count:', testData.records?.length || 0)
-    } catch (testError) {
-      console.error('[Airtable Proxy] Airtable API test error:', testError)
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to connect to Airtable API',
-          details: {
-            message: testError.message,
-            name: testError.name
-          }
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log('[Airtable Proxy] Credentials found, proceeding with request')
 
     const airtableHeaders = {
       'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
