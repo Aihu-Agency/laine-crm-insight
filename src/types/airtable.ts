@@ -5,7 +5,6 @@ export interface AirtableCustomer {
     'Last name': string
     'Phone number'?: string
     'Email'?: string
-    'Phase': string
     'Language'?: string
     'Customer type'?: string
     'Customer category'?: string
@@ -16,17 +15,15 @@ export interface AirtableCustomer {
     'Must have'?: string
     'Nice to have'?: string
     'Neighborhood or address'?: string
-    'Salesperson'?: string
+    'Sales person'?: string
     'Source of contact'?: string
-    'Last Contact'?: string
-    'Property Type'?: string[]
+    'Type of apartment'?: string[]
     'Bedrooms'?: number
     'Bathrooms'?: number
     'Notes'?: string
     'Next Action Date'?: string
-    'Next Action Type'?: string
+    'Next Actions'?: string
     'Next Action Note'?: string
-    'Tags'?: string[]
     'Customer number'?: number
   }
   createdTime: string
@@ -43,7 +40,7 @@ export interface Customer {
   lastName: string
   phone?: string
   email?: string
-  phase: string
+  phase?: string
   language?: string
   customerType?: string
   customerCategory?: string
@@ -76,7 +73,7 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   lastName: record.fields['Last name'] || '',
   phone: record.fields['Phone number'],
   email: record.fields['Email'],
-  phase: record.fields['Phase'] || 'New Lead',
+  phase: 'New Lead', // Default value since this field doesn't exist in Airtable
   language: record.fields['Language'],
   customerType: record.fields['Customer type'],
   customerCategory: record.fields['Customer category'],
@@ -87,17 +84,17 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   mustHave: record.fields['Must have'],
   niceToHave: record.fields['Nice to have'],
   neighborhoodOrAddress: record.fields['Neighborhood or address'],
-  salesperson: record.fields['Salesperson'],
+  salesperson: record.fields['Sales person'],
   sourceOfContact: record.fields['Source of contact'],
-  lastContact: record.fields['Last Contact'],
-  propertyType: record.fields['Property Type'],
+  lastContact: undefined, // Field doesn't exist in Airtable
+  propertyType: record.fields['Type of apartment'],
   bedrooms: record.fields['Bedrooms'],
   bathrooms: record.fields['Bathrooms'],
   notes: record.fields['Notes'],
   nextActionDate: record.fields['Next Action Date'],
-  nextActionType: record.fields['Next Action Type'],
+  nextActionType: record.fields['Next Actions'],
   nextActionNote: record.fields['Next Action Note'],
-  tags: record.fields['Tags'],
+  tags: [], // Field doesn't exist in Airtable
   customerNumber: record.fields['Customer number'],
   createdTime: record.createdTime
 })
