@@ -155,9 +155,13 @@ class AirtableApiService {
   // Customer Actions methods
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
     try {
-      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?filterByFormula=FIND("${customerId}",{Customer number})`)
-      // Filter out actions with empty or missing required fields
+      // Fetch actions and filter on client to handle various linked field names
+      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions`)
       return data.records
+        .filter(record => {
+          const linked = (record.fields['Customers'] || record.fields['Customer']) as string[] | undefined
+          return Array.isArray(linked) ? linked.includes(customerId) : false
+        })
         .filter(record => record.fields['Action Description'] && record.fields['Action Date'])
         .map(transformAirtableCustomerAction)
     } catch (error) {
@@ -168,39 +172,25 @@ class AirtableApiService {
 
   async createCustomerAction(customerId: string, actionData: { actionDescription: string; actionDate: string }): Promise<CustomerAction> {
     try {
-      // Try multiple possible field names since Airtable field names can vary
-      const possibleFieldNames = [
-        'Customer number',
-        'Customers',
-        'Customer',
-        'Customer ID',
-        'Customer Number'
-      ];
-
-      // Start with the most likely field name
-      const airtableFields = {
-        'Customers': [customerId], // Try this first as it's often the default for linked fields
+      // Prefer the linked record field 'Customer' (singular), fallback to 'Customers'
+      const baseFields = {
         'Action Description': actionData.actionDescription,
         'Action Date': actionData.actionDate,
       }
 
+      // 1) Try with 'Customer'
       try {
         const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
           method: 'POST',
-          body: airtableFields,
+          body: { ...baseFields, 'Customer': [customerId] },
         })
         return transformAirtableCustomerAction(record)
       } catch (firstError) {
-        // If first attempt fails, try with 'Customer number'
-        const alternativeFields = {
-          'Customer number': [customerId],
-          'Action Description': actionData.actionDescription,
-          'Action Date': actionData.actionDate,
-        }
-
+        console.warn('Create action with field "Customer" failed, retrying with "Customers". Error:', firstError)
+        // 2) Fallback to 'Customers'
         const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
           method: 'POST',
-          body: alternativeFields,
+          body: { ...baseFields, 'Customers': [customerId] },
         })
         return transformAirtableCustomerAction(record)
       }

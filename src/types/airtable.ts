@@ -73,6 +73,8 @@ export interface AirtableCustomerAction {
   fields: {
     'Customer Action'?: number
     'Customer number'?: string[]
+    'Customer'?: string[]
+    'Customers'?: string[]
     'Action Description'?: string
     'Completed'?: 'Done' | undefined
     'Action Date'?: string

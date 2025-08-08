@@ -130,7 +130,14 @@ serve(async (req) => {
       if (actualMethod === 'GET') {
         // Handle filtering for customer actions
         const urlObj = new URL(req.url)
-        const filterByFormula = urlObj.searchParams.get('filterByFormula')
+        let filterByFormula = urlObj.searchParams.get('filterByFormula')
+        
+        // If filterByFormula wasn't provided via URL, try to extract it from the wrapped endpoint
+        if (!filterByFormula && actualEndpoint && actualEndpoint.includes('?')) {
+          const qs = actualEndpoint.split('?')[1]
+          const params = new URLSearchParams(qs)
+          filterByFormula = params.get('filterByFormula') || undefined
+        }
         if (filterByFormula) {
           airtableUrl += `?filterByFormula=${encodeURIComponent(filterByFormula)}`
         }
