@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, DollarSign, User, Calendar, Phone, Mail, Edit, Plus, Save, X } from "lucide-react";
+import { ArrowLeft, MapPin, DollarSign, User, Calendar, Phone, Mail, Edit, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
@@ -22,11 +19,7 @@ const CustomerView = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  const [isEditingNextAction, setIsEditingNextAction] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [nextActionInput, setNextActionInput] = useState("");
-  const [nextActionTypeInput, setNextActionTypeInput] = useState("");
-  const [nextActionDateInput, setNextActionDateInput] = useState<Date>();
   const [notesInput, setNotesInput] = useState("");
 
   const { data: customerData, isLoading, error } = useQuery({
@@ -94,21 +87,6 @@ const CustomerView = () => {
     });
   };
 
-  const handleScheduleNextAction = () => {
-    if (nextActionInput && nextActionTypeInput && nextActionDateInput) {
-      updateCustomerMutation.mutate({
-        customerId: id!,
-        data: {
-          nextActionType: nextActionTypeInput,
-          nextActionDate: format(nextActionDateInput, 'yyyy-MM-dd'),
-        }
-      });
-      setIsEditingNextAction(false);
-      setNextActionInput("");
-      setNextActionTypeInput("");
-      setNextActionDateInput(undefined);
-    }
-  };
 
   const handleAddNote = () => {
     setIsEditingNotes(true);
@@ -340,103 +318,6 @@ const CustomerView = () => {
             {/* Customer Actions */}
             <CustomerActionsCard customerId={id!} />
 
-            {/* Next Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Next Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <p className="text-sm text-gray-500 mb-2">Current action</p>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    {customerData.nextActionType ? (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{customerData.nextActionType}</p>
-                          <p className="text-sm text-gray-600">
-                            Due: {customerData.nextActionDate || 'No date set'}
-                          </p>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setIsEditingNextAction(true)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-gray-500 mb-2">No next action scheduled</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setIsEditingNextAction(true)}
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Schedule Action
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {isEditingNextAction && (
-                  <div className="space-y-3 p-3 border rounded-lg">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Action Type</label>
-                      <Select value={nextActionTypeInput} onValueChange={setNextActionTypeInput}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select action type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Phone Call">Phone Call</SelectItem>
-                          <SelectItem value="Email">Email</SelectItem>
-                          <SelectItem value="Property Viewing">Property Viewing</SelectItem>
-                          <SelectItem value="Meeting">Meeting</SelectItem>
-                          <SelectItem value="Follow-up">Follow-up</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Date</label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left">
-                            <Calendar className="mr-2 h-4 w-4" />
-                            {nextActionDateInput ? format(nextActionDateInput, "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <CalendarComponent
-                            mode="single"
-                            selected={nextActionDateInput}
-                            onSelect={setNextActionDateInput}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button onClick={handleScheduleNextAction} size="sm">
-                        <Save className="w-4 h-4 mr-2" />
-                        Save
-                      </Button>
-                      <Button 
-                        onClick={() => setIsEditingNextAction(false)} 
-                        variant="outline" 
-                        size="sm"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
             {/* Suggested Properties */}
             <Card>

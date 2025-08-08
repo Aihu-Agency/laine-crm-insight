@@ -128,6 +128,7 @@ class AirtableApiService {
         'Bathrooms': customerData.bathrooms ? [customerData.bathrooms.toString()] : undefined,
         'Notes': customerData.notes,
         'Next Action Date': customerData.nextActionDate,
+        'Next Action Type': customerData.nextActionType,
         'Next Action Note': customerData.nextActionNote,
         'Customer number': customerData.customerNumber,
       }
@@ -155,8 +156,8 @@ class AirtableApiService {
   // Customer Actions methods
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
     try {
-      // Use Airtable filterByFormula to fetch only actions linked to this customer via the fixed 'Customer' field
-      const formula = `FIND("${customerId}", ARRAYJOIN({Customer}))`
+      // Use Airtable filterByFormula to fetch only actions linked to this customer via 'Customer' or 'Customers' fields
+      const formula = `OR(FIND("${customerId}", ARRAYJOIN({Customer})), FIND("${customerId}", ARRAYJOIN({Customers})))`
       const params = new URLSearchParams()
       params.set('filterByFormula', formula)
       params.set('pageSize', '100')
@@ -164,9 +165,7 @@ class AirtableApiService {
       params.set('sort[0][direction]', 'asc')
 
       const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`)
-      return data.records
-        .filter(record => record.fields['Action Description'] && record.fields['Action Date'])
-        .map(transformAirtableCustomerAction)
+      return data.records.map(transformAirtableCustomerAction)
     } catch (error) {
       console.error('Error fetching customer actions:', error)
       throw error

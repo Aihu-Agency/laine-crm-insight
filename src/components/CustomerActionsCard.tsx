@@ -22,7 +22,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
   const [actionDate, setActionDate] = useState<Date>();
   const queryClient = useQueryClient();
 
-  const { data: actions = [], isLoading } = useQuery({
+  const { data: actions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['customer-actions', customerId],
     queryFn: () => airtableApi.getCustomerActions(customerId),
     enabled: !!customerId,
@@ -119,6 +119,12 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
           </div>
         ) : (
           <div className="space-y-4">
+            {isError && (
+              <div className="p-3 rounded-md border border-red-200 bg-red-50 text-red-700 flex items-center justify-between">
+                <span>Failed to load actions.</span>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
+              </div>
+            )}
             {/* Add new action form */}
             {isAddingAction && (
               <div className="space-y-3 p-3 border rounded-lg bg-gray-50">
