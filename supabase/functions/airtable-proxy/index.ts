@@ -128,24 +128,21 @@ serve(async (req) => {
       airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customer%20Actions`
       
       if (actualMethod === 'GET') {
-        // Handle filtering for customer actions
-        const urlObj = new URL(req.url)
-        let filterByFormula = urlObj.searchParams.get('filterByFormula')
-        
-        // If filterByFormula wasn't provided via URL, try to extract it from the wrapped endpoint
-        if (!filterByFormula && actualEndpoint && actualEndpoint.includes('?')) {
-          const qs = actualEndpoint.split('?')[1]
-          const params = new URLSearchParams(qs)
-          filterByFormula = params.get('filterByFormula') || undefined
-        }
-        if (filterByFormula) {
-          airtableUrl += `?filterByFormula=${encodeURIComponent(filterByFormula)}`
-        }
-        
-        // Get specific action by ID
+        // Forward any query string (filterByFormula, sort, pageSize, etc.) or fetch by ID
         const actionId = path.split('/')[2]
-        if (actionId && !filterByFormula) {
+        let queryString = ''
+
+        if (actualEndpoint && actualEndpoint.includes('?')) {
+          queryString = actualEndpoint.split('?')[1]
+        } else {
+          const urlObj = new URL(req.url)
+          queryString = urlObj.searchParams.toString()
+        }
+
+        if (actionId) {
           airtableUrl += `/${actionId}`
+        } else if (queryString) {
+          airtableUrl += `?${queryString}`
         }
       } else if (actualMethod === 'POST') {
         // Create new customer action
@@ -182,7 +179,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       } else if (actualMethod === 'PATCH') {
-        // Update customer action (mark as completed)
+        // Update customer action (e.g., mark as completed or undo)
         const actionId = path.split('/')[2]
         airtableUrl += `/${actionId}`
         const response = await fetch(airtableUrl, {
@@ -194,6 +191,20 @@ serve(async (req) => {
         })
         const data = await response.json()
         return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } else if (actualMethod === 'DELETE') {
+        // Delete a customer action
+        const actionId = path.split('/')[2]
+        airtableUrl += `/${actionId}`
+        const response = await fetch(airtableUrl, {
+          method: 'DELETE',
+          headers: airtableHeaders,
+        })
+        const text = await response.text()
+        // Airtable returns empty body on delete success
+        return new Response(text || JSON.stringify({ success: response.ok }), {
+          status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }

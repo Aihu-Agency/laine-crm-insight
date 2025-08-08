@@ -155,17 +155,16 @@ class AirtableApiService {
   // Customer Actions methods
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
     try {
-      // Fetch actions and filter on client to handle various linked field names
-      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions`)
+      // Use Airtable filterByFormula to fetch only actions linked to this customer via the fixed 'Customer' field
+      const formula = `FIND("${customerId}", ARRAYJOIN({Customer}))`
+      const params = new URLSearchParams()
+      params.set('filterByFormula', formula)
+      params.set('pageSize', '100')
+      params.set('sort[0][field]', 'Action Date')
+      params.set('sort[0][direction]', 'asc')
+
+      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`)
       return data.records
-        .filter(record => {
-          const linkedCustomers = (
-            record.fields['Customer number'] ||
-            record.fields['Customer'] ||
-            record.fields['Customers']
-          ) as string[] | undefined
-          return Array.isArray(linkedCustomers) ? linkedCustomers.includes(customerId) : false
-        })
         .filter(record => record.fields['Action Description'] && record.fields['Action Date'])
         .map(transformAirtableCustomerAction)
     } catch (error) {
@@ -176,33 +175,18 @@ class AirtableApiService {
 
   async createCustomerAction(customerId: string, actionData: { actionDescription: string; actionDate: string }): Promise<CustomerAction> {
     try {
-      const baseFields = {
+      const fields = {
         'Action Description': actionData.actionDescription,
         'Action Date': actionData.actionDate,
+        'Customer': [customerId],
       }
 
-      // Try multiple possible linked field names in order of likelihood
-      const fieldAttempts = [
-        { 'Customer number': [customerId] },
-        { 'Customer': [customerId] },
-        { 'Customers': [customerId] },
-      ] as const
+      const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
+        method: 'POST',
+        body: fields,
+      })
 
-      let lastError: unknown
-      for (const attempt of fieldAttempts) {
-        try {
-          const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
-            method: 'POST',
-            body: { ...baseFields, ...attempt },
-          })
-          return transformAirtableCustomerAction(record)
-        } catch (err) {
-          console.warn('Create action failed with fields:', Object.keys(attempt)[0], err)
-          lastError = err
-        }
-      }
-
-      throw lastError || new Error('Failed to create customer action with any known field name')
+      return transformAirtableCustomerAction(record)
     } catch (error) {
       console.error('Error creating customer action:', error)
       throw error
@@ -223,6 +207,36 @@ class AirtableApiService {
       return transformAirtableCustomerAction(record)
     } catch (error) {
       console.error('Error marking action as completed:', error)
+      throw error
+    }
+  }
+
+  async markActionAsUncompleted(actionId: string): Promise<CustomerAction> {
+    try {
+      const airtableFields = {
+        'Completed': null as unknown as undefined
+      }
+
+      const record: AirtableCustomerAction = await this.makeRequest(`/customer-actions/${actionId}`, {
+        method: 'PATCH',
+        body: airtableFields,
+      })
+
+      return transformAirtableCustomerAction(record)
+    } catch (error) {
+      console.error('Error undoing completed action:', error)
+      throw error
+    }
+  }
+
+  async deleteCustomerAction(actionId: string): Promise<{ success: true }> {
+    try {
+      await this.makeRequest(`/customer-actions/${actionId}`, {
+        method: 'DELETE',
+      })
+      return { success: true }
+    } catch (error) {
+      console.error('Error deleting customer action:', error)
       throw error
     }
   }
