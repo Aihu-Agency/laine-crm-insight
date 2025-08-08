@@ -155,28 +155,14 @@ class AirtableApiService {
 
   // Customer Actions methods
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
-    const fetchWithField = async (fieldName: 'Customer' | 'Customers') => {
-      const formula = `FIND("${customerId}", ARRAYJOIN({${fieldName}}))`
+    try {
       const params = new URLSearchParams()
-      params.set('filterByFormula', formula)
-      params.set('pageSize', '100')
-      params.set('sort[0][field]', 'Action Date')
-      params.set('sort[0][direction]', 'asc')
+      params.set('customerId', customerId)
       const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`)
       return data.records.map(transformAirtableCustomerAction)
-    }
-
-    try {
-      // Try the correct field first
-      return await fetchWithField('Customer')
-    } catch (primaryError) {
-      console.warn('Primary fetch with {Customer} failed, attempting fallback to {Customers}', primaryError)
-      try {
-        return await fetchWithField('Customers')
-      } catch (fallbackError) {
-        console.error('Error fetching customer actions after fallback:', fallbackError)
-        throw fallbackError
-      }
+    } catch (error) {
+      console.error('Error fetching customer actions:', error)
+      throw error
     }
   }
 

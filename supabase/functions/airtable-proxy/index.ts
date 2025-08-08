@@ -139,6 +139,56 @@ serve(async (req) => {
           queryString = urlObj.searchParams.toString()
         }
 
+        const searchParams = new URLSearchParams(queryString)
+        const customerIdParam = searchParams.get('customerId')
+
+        if (customerIdParam) {
+          console.log('[Airtable Proxy] Server-side filtering Customer Actions by customerId:', customerIdParam)
+
+          let allRecords: any[] = []
+          let offset: string | undefined = undefined
+          let page = 1
+
+          do {
+            let pageUrl = `${airtableUrl}?pageSize=100&sort[0][field]=Action%20Date&sort[0][direction]=asc`
+            if (offset) pageUrl += `&offset=${offset}`
+
+            console.log(`[Airtable Proxy] Fetching Customer Actions page ${page} URL:`, pageUrl)
+            const resp = await fetch(pageUrl, { headers: airtableHeaders })
+            const pageData = await resp.json()
+
+            if (!resp.ok) {
+              console.error('[Airtable Proxy] Airtable error while paging Customer Actions:', pageData)
+              return new Response(JSON.stringify({ error: 'Failed to fetch customer actions', details: pageData }), {
+                status: resp.status,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              })
+            }
+
+            const pageRecords = Array.isArray(pageData.records) ? pageData.records : []
+            allRecords = allRecords.concat(pageRecords)
+            offset = pageData.offset
+            page += 1
+          } while (offset)
+
+          const filtered = allRecords.filter((rec) => {
+            const f = rec?.fields || {}
+            const links = Array.isArray(f['Customer']) ? f['Customer'] : (Array.isArray(f['Customers']) ? f['Customers'] : [])
+            return links.includes(customerIdParam)
+          })
+
+          // Ensure consistent sorting by Action Date ASC (nulls last)
+          filtered.sort((a: any, b: any) => {
+            const da = a?.fields?.['Action Date'] ? Date.parse(a.fields['Action Date']) : Number.POSITIVE_INFINITY
+            const db = b?.fields?.['Action Date'] ? Date.parse(b.fields['Action Date']) : Number.POSITIVE_INFINITY
+            return da - db
+          })
+
+          return new Response(JSON.stringify({ records: filtered }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
         if (actionId) {
           airtableUrl += `/${actionId}`
         } else if (queryString) {
