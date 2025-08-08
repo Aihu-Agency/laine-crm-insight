@@ -155,20 +155,28 @@ class AirtableApiService {
 
   // Customer Actions methods
   async getCustomerActions(customerId: string): Promise<CustomerAction[]> {
-    try {
-      // Use Airtable filterByFormula to fetch only actions linked to this customer via 'Customer' or 'Customers' fields
-      const formula = `OR(FIND("${customerId}", ARRAYJOIN({Customer})), FIND("${customerId}", ARRAYJOIN({Customers})))`
+    const fetchWithField = async (fieldName: 'Customer' | 'Customers') => {
+      const formula = `FIND("${customerId}", ARRAYJOIN({${fieldName}}))`
       const params = new URLSearchParams()
       params.set('filterByFormula', formula)
       params.set('pageSize', '100')
       params.set('sort[0][field]', 'Action Date')
       params.set('sort[0][direction]', 'asc')
-
       const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`)
       return data.records.map(transformAirtableCustomerAction)
-    } catch (error) {
-      console.error('Error fetching customer actions:', error)
-      throw error
+    }
+
+    try {
+      // Try the correct field first
+      return await fetchWithField('Customer')
+    } catch (primaryError) {
+      console.warn('Primary fetch with {Customer} failed, attempting fallback to {Customers}', primaryError)
+      try {
+        return await fetchWithField('Customers')
+      } catch (fallbackError) {
+        console.error('Error fetching customer actions after fallback:', fallbackError)
+        throw fallbackError
+      }
     }
   }
 

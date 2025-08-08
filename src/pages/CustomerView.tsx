@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, DollarSign, User, Calendar, Phone, Mail, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Edit, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -200,42 +200,41 @@ const CustomerView = () => {
                     <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium flex items-center">
                       <Phone className="w-4 h-4 mr-2" />
-                      {customerData.phone || 'Not provided'}
+                      {customerData.phone || 'Not specified'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
                     <p className="font-medium flex items-center">
                       <Mail className="w-4 h-4 mr-2" />
-                      {customerData.email || 'Not provided'}
+                      {customerData.email || 'Not specified'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium flex items-center">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {customerData.areasOfInterest || 'Not specified'}
-                    </p>
+                    <p className="text-sm text-gray-500">Language</p>
+                    <p className="font-medium">{customerData.language || 'Not specified'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Budget Range</p>
-                    <p className="font-medium flex items-center">
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      {customerData.minPrice && customerData.maxPrice ? `€${customerData.minPrice.toLocaleString()} - €${customerData.maxPrice.toLocaleString()}` : customerData.minPrice ? `€${customerData.minPrice.toLocaleString()}+` : customerData.maxPrice ? `Up to €${customerData.maxPrice.toLocaleString()}` : 'Not specified'}
-                    </p>
+                    <p className="text-sm text-gray-500">Customer type</p>
+                    <p className="font-medium">{customerData.customerType || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Customer category</p>
+                    <p className="font-medium">{customerData.customerCategory || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Time of purchase</p>
+                    <p className="font-medium">{customerData.timeOfPurchase || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Source of contact</p>
+                    <p className="font-medium">{customerData.sourceOfContact || 'Not specified'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Salesperson</p>
                     <p className="font-medium flex items-center">
                       <User className="w-4 h-4 mr-2" />
-                      {customerData.salesperson || 'Unassigned'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Last Contact</p>
-                    <p className="font-medium flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {customerData.lastContact || 'No contact recorded'}
+                      {customerData.salesperson || 'Not specified'}
                     </p>
                   </div>
                 </div>
@@ -248,15 +247,35 @@ const CustomerView = () => {
                 <CardTitle>Property Preferences</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Property Types</p>
+                    <p className="text-sm text-gray-500">Location</p>
+                    <p className="font-medium">{customerData.areasOfInterest || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Budget range</p>
+                    <p className="font-medium">
+                      {customerData.minPrice && customerData.maxPrice
+                        ? `€${customerData.minPrice.toLocaleString()} - €${customerData.maxPrice.toLocaleString()}`
+                        : customerData.minPrice
+                        ? `€${customerData.minPrice.toLocaleString()}+`
+                        : customerData.maxPrice
+                        ? `Up to €${customerData.maxPrice.toLocaleString()}`
+                        : 'Not specified'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Property type</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {customerData.propertyType?.map((type, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {type}
-                        </Badge>
-                      )) || <span className="text-gray-400 text-sm">Not specified</span>}
+                      {customerData.propertyType && customerData.propertyType.length > 0 ? (
+                        customerData.propertyType.map((type, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {type}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">Not specified</span>
+                      )}
                     </div>
                   </div>
                   <div>
@@ -266,6 +285,18 @@ const CustomerView = () => {
                   <div>
                     <p className="text-sm text-gray-500">Bathrooms</p>
                     <p className="font-medium">{customerData.bathrooms || 'Not specified'}</p>
+                  </div>
+                  <div className="lg:col-span-3">
+                    <p className="text-sm text-gray-500">Must have</p>
+                    <p className="font-medium">{customerData.mustHave || 'Not specified'}</p>
+                  </div>
+                  <div className="lg:col-span-3">
+                    <p className="text-sm text-gray-500">Nice to have</p>
+                    <p className="font-medium">{customerData.niceToHave || 'Not specified'}</p>
+                  </div>
+                  <div className="lg:col-span-3">
+                    <p className="text-sm text-gray-500">Neighborhood or address</p>
+                    <p className="font-medium">{customerData.neighborhoodOrAddress || 'Not specified'}</p>
                   </div>
                 </div>
               </CardContent>
