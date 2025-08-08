@@ -62,12 +62,18 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
   const createCustomerMutation = useMutation({
     mutationFn: (customerData: Partial<Customer>) => airtableApi.createCustomer(customerData),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({
         title: "Success",
         description: "Customer created successfully",
       });
+      if ((data as any)?._warnings?.length) {
+        toast({
+          title: "Note",
+          description: (data as any)._warnings.join(' '),
+        });
+      }
       onSave();
     },
     onError: (error) => {
@@ -82,13 +88,19 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const updateCustomerMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Customer> }) =>
       airtableApi.updateCustomer(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
       toast({
         title: "Success",
         description: "Customer updated successfully",
       });
+      if ((data as any)?._warnings?.length) {
+        toast({
+          title: "Note",
+          description: (data as any)._warnings.join(' '),
+        });
+      }
       onSave();
     },
     onError: (error) => {
@@ -153,10 +165,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     }
   };
 
-  const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"];
-  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Other"];
-  const bedroomOptions = [1, 2, 3, 4, 5];
-  const bathroomOptions = [1, 2, 3, 4];
+  const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"]; 
+  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Other"]; 
+  const bedroomOptions = ['1', '2', '3', '4+'];
+  const bathroomOptions = ['1', '2', '3+'];
 
   return (
     <div className="min-h-screen bg-laine-grey">
@@ -383,13 +395,13 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="bedrooms">Bedrooms</Label>
-                      <Select value={bedrooms?.toString() || ""} onValueChange={(value) => setBedrooms(value ? parseInt(value) : undefined)}>
+                      <Select value={bedrooms === 4 ? '4+' : (bedrooms?.toString() || "")} onValueChange={(value) => setBedrooms(value ? (value === '4+' ? 4 : parseInt(value)) : undefined)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select bedrooms" />
                         </SelectTrigger>
                         <SelectContent>
-                          {bedroomOptions.map((num) => (
-                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          {bedroomOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -397,13 +409,13 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
                     <div className="space-y-2">
                       <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Select value={bathrooms?.toString() || ""} onValueChange={(value) => setBathrooms(value ? parseInt(value) : undefined)}>
+                      <Select value={bathrooms === 3 ? '3+' : (bathrooms?.toString() || "")} onValueChange={(value) => setBathrooms(value ? (value === '3+' ? 3 : parseInt(value)) : undefined)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select bathrooms" />
                         </SelectTrigger>
                         <SelectContent>
-                          {bathroomOptions.map((num) => (
-                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          {bathroomOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

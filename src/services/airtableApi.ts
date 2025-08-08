@@ -39,7 +39,7 @@ class AirtableApiService {
     }
   }
 
-  async createCustomer(customerData: Partial<Customer>): Promise<Customer> {
+  async createCustomer(customerData: Partial<Customer>): Promise<Customer & { _warnings?: string[] }> {
     try {
       // Get next customer number with fallback handling
       let nextCustomerNumber = 1001; // Default starting number
@@ -58,7 +58,17 @@ class AirtableApiService {
         // nextCustomerNumber remains 1001
       }
 
-      const airtableFields = {
+      // Sanitize inputs
+      const AREA_ALLOWED = [
+        'Marbella', 'Puerto Banus', 'Malaga', 'Fuengirola', 'Mijas', 'Torremolinos', 'Other'
+      ] as const;
+      const rawAreas = customerData.areasOfInterest
+        ? customerData.areasOfInterest.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const sanitizedAreas = rawAreas.filter(a => AREA_ALLOWED.includes(a as any));
+      const invalidAreas = rawAreas.filter(a => !AREA_ALLOWED.includes(a as any));
+
+      const airtableFieldsBase: Record<string, any> = {
         'First name': customerData.firstName || '',
         'Last name': customerData.lastName || '',
         'Phone number': customerData.phone,
@@ -69,7 +79,7 @@ class AirtableApiService {
         'Time of purchase': customerData.timeOfPurchase,
         'Min price': customerData.minPrice,
         'Max price': customerData.maxPrice,
-        'Areas of interest': customerData.areasOfInterest ? customerData.areasOfInterest.split(', ').filter(area => area.trim()) : undefined,
+        'Areas of interest': sanitizedAreas.length ? sanitizedAreas : undefined,
         'Must have': customerData.mustHave,
         'Nice to have': customerData.niceToHave,
         'Neighborhood or address': customerData.neighborhoodOrAddress,
@@ -82,31 +92,77 @@ class AirtableApiService {
         'Next Action Date': customerData.nextActionDate,
         'Next Action Note': customerData.nextActionNote,
         'Customer number': nextCustomerNumber,
-      }
+      };
 
       // Remove undefined values and empty strings to avoid Airtable errors
-      Object.keys(airtableFields).forEach(key => {
-        const value = airtableFields[key as keyof typeof airtableFields]
-        if (value === undefined || value === '') {
-          delete airtableFields[key as keyof typeof airtableFields]
+      const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
+        const value = airtableFieldsBase[key];
+        if (!(value === undefined || value === '')) acc[key] = value;
+        return acc;
+      }, {} as Record<string, any>);
+
+      let warnings: string[] = [];
+      if (invalidAreas.length) {
+        warnings.push(`Ignored invalid Areas of interest: ${invalidAreas.join(', ')}`);
+      }
+
+      try {
+        const record: AirtableCustomer = await this.makeRequest('/customers', {
+          method: 'POST',
+          body: cleanFields,
+        });
+
+        // Optionally create a linked Customer Action
+        if ((customerData.nextActionDate || customerData.nextActionNote) && record?.id) {
+          const actionDate = customerData.nextActionDate || new Date().toISOString().slice(0, 10);
+          const actionDescription = customerData.nextActionNote || 'Follow up';
+          try {
+            await this.createCustomerAction(record.id, { actionDescription, actionDate });
+          } catch (e) {
+            console.warn('Failed to create initial customer action:', e);
+          }
         }
-      })
 
-      const record: AirtableCustomer = await this.makeRequest('/customers', {
-        method: 'POST',
-        body: airtableFields,
-      })
+        const transformed = transformAirtableCustomer(record) as Customer & { _warnings?: string[] };
+        if (warnings.length) transformed._warnings = warnings;
+        return transformed;
+      } catch (err: any) {
+        const msg = (err && (err.message || err.toString())) || '';
+        if (msg.includes('422')) {
+          // Retry without Areas of interest
+          const retryFields = { ...cleanFields };
+          if (retryFields['Areas of interest']) delete retryFields['Areas of interest'];
+          warnings.push('Areas of interest were removed due to invalid values.');
 
-      return transformAirtableCustomer(record)
+          const record: AirtableCustomer = await this.makeRequest('/customers', {
+            method: 'POST',
+            body: retryFields,
+          });
+          const transformed = transformAirtableCustomer(record) as Customer & { _warnings?: string[] };
+          if (warnings.length) transformed._warnings = warnings;
+          return transformed;
+        }
+        throw err;
+      }
     } catch (error) {
-      console.error('Error creating customer:', error)
-      throw error
+      console.error('Error creating customer:', error);
+      throw error;
     }
   }
 
-  async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer> {
+  async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer & { _warnings?: string[] }> {
     try {
-      const airtableFields = {
+      // Sanitize inputs
+      const AREA_ALLOWED = [
+        'Marbella', 'Puerto Banus', 'Malaga', 'Fuengirola', 'Mijas', 'Torremolinos', 'Other'
+      ] as const;
+      const rawAreas = customerData.areasOfInterest
+        ? customerData.areasOfInterest.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const sanitizedAreas = rawAreas.filter(a => AREA_ALLOWED.includes(a as any));
+      const invalidAreas = rawAreas.filter(a => !AREA_ALLOWED.includes(a as any));
+
+      const airtableFieldsBase: Record<string, any> = {
         'First name': customerData.firstName,
         'Last name': customerData.lastName,
         'Phone number': customerData.phone,
@@ -117,7 +173,7 @@ class AirtableApiService {
         'Time of purchase': customerData.timeOfPurchase,
         'Min price': customerData.minPrice,
         'Max price': customerData.maxPrice,
-        'Areas of interest': customerData.areasOfInterest ? customerData.areasOfInterest.split(', ').filter(area => area.trim()) : undefined,
+        'Areas of interest': sanitizedAreas.length ? sanitizedAreas : undefined,
         'Must have': customerData.mustHave,
         'Nice to have': customerData.niceToHave,
         'Neighborhood or address': customerData.neighborhoodOrAddress,
@@ -131,22 +187,44 @@ class AirtableApiService {
         'Next Action Type': customerData.nextActionType,
         'Next Action Note': customerData.nextActionNote,
         'Customer number': customerData.customerNumber,
-      }
+      };
 
       // Remove undefined values and empty strings
-      Object.keys(airtableFields).forEach(key => {
-        const value = airtableFields[key as keyof typeof airtableFields]
-        if (value === undefined || value === '') {
-          delete airtableFields[key as keyof typeof airtableFields]
+      const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
+        const value = airtableFieldsBase[key];
+        if (!(value === undefined || value === '')) acc[key] = value;
+        return acc;
+      }, {} as Record<string, any>);
+
+      let warnings: string[] = [];
+      if (invalidAreas.length) {
+        warnings.push(`Ignored invalid Areas of interest: ${invalidAreas.join(', ')}`);
+      }
+
+      try {
+        const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
+          method: 'PATCH',
+          body: cleanFields,
+        });
+        const transformed = transformAirtableCustomer(record) as Customer & { _warnings?: string[] };
+        if (warnings.length) transformed._warnings = warnings;
+        return transformed;
+      } catch (err: any) {
+        const msg = (err && (err.message || err.toString())) || '';
+        if (msg.includes('422')) {
+          const retryFields = { ...cleanFields };
+          if (retryFields['Areas of interest']) delete retryFields['Areas of interest'];
+          warnings.push('Areas of interest were removed due to invalid values.');
+          const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
+            method: 'PATCH',
+            body: retryFields,
+          });
+          const transformed = transformAirtableCustomer(record) as Customer & { _warnings?: string[] };
+          if (warnings.length) transformed._warnings = warnings;
+          return transformed;
         }
-      })
-
-      const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
-        method: 'PATCH',
-        body: airtableFields,
-      })
-
-      return transformAirtableCustomer(record)
+        throw err;
+      }
     } catch (error) {
       console.error('Error updating customer:', error)
       throw error
