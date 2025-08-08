@@ -42,9 +42,10 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
       setActionDate(undefined);
     },
     onError: (error) => {
+      const msg = error instanceof Error ? error.message : ''
       toast({
         title: "Error",
-        description: "Failed to create customer action",
+        description: `Failed to create customer action${msg ? `: ${msg}` : ''}`,
         variant: "destructive",
       });
     },
@@ -60,9 +61,10 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
       });
     },
     onError: (error) => {
+      const msg = error instanceof Error ? error.message : ''
       toast({
         title: "Error",
-        description: "Failed to mark action as completed",
+        description: `Failed to mark action as completed${msg ? `: ${msg}` : ''}`,
         variant: "destructive",
       });
     },
@@ -103,6 +105,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
             variant="outline" 
             size="sm"
             onClick={() => setIsAddingAction(true)}
+            disabled={isAddingAction || createActionMutation.isPending || isLoading}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Action

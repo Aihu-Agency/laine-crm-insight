@@ -159,8 +159,12 @@ class AirtableApiService {
       const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions`)
       return data.records
         .filter(record => {
-          const linked = (record.fields['Customers'] || record.fields['Customer']) as string[] | undefined
-          return Array.isArray(linked) ? linked.includes(customerId) : false
+          const linkedCustomers = (
+            record.fields['Customer number'] ||
+            record.fields['Customer'] ||
+            record.fields['Customers']
+          ) as string[] | undefined
+          return Array.isArray(linkedCustomers) ? linkedCustomers.includes(customerId) : false
         })
         .filter(record => record.fields['Action Description'] && record.fields['Action Date'])
         .map(transformAirtableCustomerAction)
@@ -172,28 +176,33 @@ class AirtableApiService {
 
   async createCustomerAction(customerId: string, actionData: { actionDescription: string; actionDate: string }): Promise<CustomerAction> {
     try {
-      // Prefer the linked record field 'Customer' (singular), fallback to 'Customers'
       const baseFields = {
         'Action Description': actionData.actionDescription,
         'Action Date': actionData.actionDate,
       }
 
-      // 1) Try with 'Customer'
-      try {
-        const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
-          method: 'POST',
-          body: { ...baseFields, 'Customer': [customerId] },
-        })
-        return transformAirtableCustomerAction(record)
-      } catch (firstError) {
-        console.warn('Create action with field "Customer" failed, retrying with "Customers". Error:', firstError)
-        // 2) Fallback to 'Customers'
-        const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
-          method: 'POST',
-          body: { ...baseFields, 'Customers': [customerId] },
-        })
-        return transformAirtableCustomerAction(record)
+      // Try multiple possible linked field names in order of likelihood
+      const fieldAttempts = [
+        { 'Customer number': [customerId] },
+        { 'Customer': [customerId] },
+        { 'Customers': [customerId] },
+      ] as const
+
+      let lastError: unknown
+      for (const attempt of fieldAttempts) {
+        try {
+          const record: AirtableCustomerAction = await this.makeRequest('/customer-actions', {
+            method: 'POST',
+            body: { ...baseFields, ...attempt },
+          })
+          return transformAirtableCustomerAction(record)
+        } catch (err) {
+          console.warn('Create action failed with fields:', Object.keys(attempt)[0], err)
+          lastError = err
+        }
       }
+
+      throw lastError || new Error('Failed to create customer action with any known field name')
     } catch (error) {
       console.error('Error creating customer action:', error)
       throw error
