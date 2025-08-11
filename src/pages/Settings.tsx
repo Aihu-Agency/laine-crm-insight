@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,58 +6,196 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+
+type UserRow = {
+  id: string;
+  email: string | null;
+  first_name: string;
+  last_name: string;
+  last_login: string | null;
+  is_admin: boolean;
+};
 
 const Settings = () => {
-  const users = [
-    {
-      id: 1,
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith@lainehomes.com",
-      lastLogin: "2024-01-29 14:30",
-      isAdmin: true
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setCurrentUserId(session?.user?.id ?? null);
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      setCurrentUserId(data.session?.user?.id ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", currentUserId)
+      .then(({ data }) => {
+        const admin = (data ?? []).some((r) => r.role === "admin");
+        setIsAdmin(admin);
+      });
+  }, [currentUserId]);
+
+  const fetchUsers = async (): Promise<UserRow[]> => {
+    const { data, error } = await supabase.functions.invoke("user-admin", {
+      body: { action: "list" },
+    });
+    if (error) throw error;
+    return (data?.users ?? []) as UserRow[];
+  };
+
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: fetchUsers,
+    enabled: isAdmin,
+  });
+
+  const createUser = useMutation({
+    mutationFn: async (payload: { email: string; password: string; first_name?: string; last_name?: string; is_admin?: boolean }) => {
+      const { error } = await supabase.functions.invoke("user-admin", {
+        body: { action: "create", payload },
+      });
+      if (error) throw error;
     },
-    {
-      id: 2,
-      firstName: "Sarah",
-      lastName: "Johnson",
-      email: "sarah.johnson@lainehomes.com",
-      lastLogin: "2024-01-29 09:15",
-      isAdmin: false
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    {
-      id: 3,
-      firstName: "Michael",
-      lastName: "Brown",
-      email: "michael.brown@lainehomes.com",
-      lastLogin: "2024-01-28 16:45",
-      isAdmin: false
+    meta: { onError: (_: unknown) => {} },
+  });
+
+  const updateUser = useMutation({
+    mutationFn: async (payload: { user_id: string; email?: string; password?: string; first_name?: string; last_name?: string; is_admin?: boolean }) => {
+      const { error } = await supabase.functions.invoke("user-admin", {
+        body: { action: "update", payload },
+      });
+      if (error) throw error;
     },
-    {
-      id: 4,
-      firstName: "Emily",
-      lastName: "Davis",
-      email: "emily.davis@lainehomes.com",
-      lastLogin: "2024-01-29 11:20",
-      isAdmin: true
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    {
-      id: 5,
-      firstName: "David",
-      lastName: "Wilson",
-      email: "david.wilson@lainehomes.com",
-      lastLogin: "2024-01-27 13:10",
-      isAdmin: false
+    meta: { onError: (_: unknown) => {} },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (user_id: string) => {
+      const { error } = await supabase.functions.invoke("user-admin", {
+        body: { action: "delete", payload: { user_id } },
+      });
+      if (error) throw error;
     },
-    {
-      id: 6,
-      firstName: "Lisa",
-      lastName: "Anderson",
-      email: "lisa.anderson@lainehomes.com",
-      lastLogin: "2024-01-29 08:45",
-      isAdmin: false
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    meta: { onError: (_: unknown) => {} },
+  });
+
+  // Form state for add/edit
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
+
+  useEffect(() => {
+    if (editing) {
+      setForm({
+        email: editing.email ?? "",
+        password: "",
+        first_name: editing.first_name ?? "",
+        last_name: editing.last_name ?? "",
+        is_admin: editing.is_admin,
+      });
+    } else {
+      setForm({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
     }
-  ];
+  }, [editing]);
+
+  const canSeeUserManagement = isAdmin;
+
+  const onOpenAdd = () => {
+    setEditing(null);
+    setDialogOpen(true);
+  };
+
+  const onOpenEdit = (u: UserRow) => {
+    setEditing(u);
+    setDialogOpen(true);
+  };
+
+  const onSubmitForm = async () => {
+    if (editing) {
+      await updateUser.mutateAsync({
+        user_id: editing.id,
+        email: form.email || undefined,
+        password: form.password || undefined,
+        first_name: form.first_name || undefined,
+        last_name: form.last_name || undefined,
+        is_admin: form.is_admin,
+      });
+      toast({ title: "User updated" });
+    } else {
+      if (!form.email || !form.password) {
+        toast({ title: "Email and password required", variant: "destructive" });
+        return;
+      }
+      await createUser.mutateAsync({
+        email: form.email,
+        password: form.password,
+        first_name: form.first_name || undefined,
+        last_name: form.last_name || undefined,
+        is_admin: form.is_admin,
+      });
+      toast({ title: "User created" });
+    }
+    setDialogOpen(false);
+  };
+
+  const onDelete = async (u: UserRow) => {
+    if (currentUserId === u.id) {
+      toast({ title: "You cannot delete yourself", variant: "destructive" });
+      return;
+    }
+    await deleteUser.mutateAsync(u.id);
+    toast({ title: "User deleted" });
+  };
+
+  // Profile form (current user only, uses direct table access)
+  const [profile, setProfile] = useState({ first_name: "", last_name: "" });
+  useEffect(() => {
+    if (!currentUserId) return;
+    supabase
+      .from("profiles")
+      .select("first_name,last_name")
+      .eq("id", currentUserId)
+      .maybeSingle()
+      .then(({ data }) => {
+        setProfile({
+          first_name: data?.first_name ?? "",
+          last_name: data?.last_name ?? "",
+        });
+      });
+  }, [currentUserId]);
+
+  const saveProfile = async () => {
+    if (!currentUserId) return;
+    const { error } = await supabase.from("profiles").update(profile).eq("id", currentUserId);
+    if (error) {
+      toast({ title: "Failed to save profile", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile saved" });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-laine-grey">
@@ -72,66 +211,144 @@ const Settings = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" defaultValue="Current User" />
+                <Input
+                  id="firstName"
+                  value={profile.first_name}
+                  onChange={(e) => setProfile((p) => ({ ...p, first_name: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" defaultValue="Name" />
+                <Input
+                  id="lastName"
+                  value={profile.last_name}
+                  onChange={(e) => setProfile((p) => ({ ...p, last_name: e.target.value }))}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue="user@lainehomes.com" />
+              <Input id="email" type="email" value={/* ... keep existing code (email display readonly) */ ""} readOnly placeholder="Read-only" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">New Password</Label>
-              <Input id="password" type="password" placeholder="Leave blank to keep current password" />
+              <Input id="password" type="password" placeholder="Ask admin to reset" readOnly />
             </div>
-            <Button>Save Changes</Button>
+            <Button onClick={saveProfile}>Save Changes</Button>
           </CardContent>
         </Card>
 
-        {/* User Management Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>Manage all users in the system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>First Name</TableHead>
-                  <TableHead>Last Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead>Admin</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.firstName}</TableCell>
-                    <TableCell>{user.lastName}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.lastLogin}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.isAdmin ? "default" : "secondary"}>
-                        {user.isAdmin ? "Yes" : "No"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        {/* User Management Section - Admin only */}
+        {canSeeUserManagement && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Manage all users in the system</CardDescription>
+              </div>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={onOpenAdd}>Add User</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editing ? "Edit User" : "Add User"}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Email</Label>
+                      <Input
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                        placeholder="user@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{editing ? "New Password (optional)" : "Password"}</Label>
+                      <Input
+                        type="password"
+                        value={form.password}
+                        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                        placeholder={editing ? "Leave blank to keep" : "Enter password"}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>First name</Label>
+                        <Input
+                          value={form.first_name}
+                          onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Last name</Label>
+                        <Input
+                          value={form.last_name}
+                          onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="is_admin"
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={form.is_admin}
+                        onChange={(e) => setForm((f) => ({ ...f, is_admin: e.target.checked }))}
+                      />
+                      <Label htmlFor="is_admin">Admin</Label>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={onSubmitForm}>{editing ? "Save" : "Create"}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground">Loading users...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>First Name</TableHead>
+                      <TableHead>Last Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Last Login</TableHead>
+                      <TableHead>Admin</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.first_name}</TableCell>
+                        <TableCell>{user.last_name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.last_login ? new Date(user.last_login).toLocaleString() : "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.is_admin ? "default" : "secondary"}>
+                            {user.is_admin ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => onOpenEdit(user)}>
+                            Edit
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => onDelete(user)}>
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

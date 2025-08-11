@@ -14,11 +14,12 @@ import Todo from "./pages/Todo";
 import Settings from "./pages/Settings";
 import AddClientForm from "./components/AddClientForm";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const AddClientPage = () => {
   const location = useLocation();
-  const initialData = location.state?.initialData;
-  const isEditing = location.state?.isEditing || false;
+  const initialData = (location as any).state?.initialData;
+  const isEditing = (location as any).state?.isEditing || false;
   
   return (
     <AddClientForm 
@@ -40,14 +41,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/customers/add" element={<AddClientPage />} />
-          <Route path="/customers/:id" element={<CustomerView />} />
-          <Route path="/sales-funnel" element={<SalesFunnel />} />
-          <Route path="/rental" element={<Rental />} />
-          <Route path="/todo" element={<Todo />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+          <Route path="/customers/add" element={<ProtectedRoute><AddClientPage /></ProtectedRoute>} />
+          <Route path="/customers/:id" element={<ProtectedRoute><CustomerView /></ProtectedRoute>} />
+          <Route path="/sales-funnel" element={<ProtectedRoute><SalesFunnel /></ProtectedRoute>} />
+          <Route path="/rental" element={<ProtectedRoute><Rental /></ProtectedRoute>} />
+          <Route path="/todo" element={<ProtectedRoute><Todo /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

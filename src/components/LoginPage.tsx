@@ -4,21 +4,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface LoginPageProps {
-  onLogin: () => void;
-}
-
-const LoginPage = ({ onLogin }: LoginPageProps) => {
+const LoginPage = () => {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation - in a real app, you'd validate credentials
-    if (email && password) {
-      onLogin();
+    if (!email || !password) return;
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      toast({
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
     }
+
+    const userId = data.user?.id;
+    if (userId) {
+      // Update last_login for the user
+      await supabase.from("profiles").update({ last_login: new Date().toISOString() }).eq("id", userId);
+    }
+
+    toast({
+      title: "Welcome",
+      description: "You are now signed in.",
+    });
+    setLoading(false);
   };
 
   return (
@@ -63,15 +85,16 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
             <Button 
               type="submit" 
               className="w-full bg-primary hover:bg-primary/90 text-white"
+              disabled={loading}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
           
           <div className="text-center">
-            <a href="#" className="text-sm text-muted-foreground hover:text-primary underline">
-              Forgot password?
-            </a>
+            <span className="text-sm text-muted-foreground">
+              Contact an admin to get access. No public sign-up.
+            </span>
           </div>
         </CardContent>
       </Card>
