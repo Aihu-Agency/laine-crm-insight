@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Eye } from "lucide-react";
@@ -5,14 +6,42 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
 import { Customer } from "@/types/airtable";
-
-const CustomerList = () => {
+import { CustomerFiltersValue } from "@/types/filters";
+const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValue; onCountChange?: (n: number) => void }) => {
   const navigate = useNavigate();
 
   const { data: customers = [], isLoading, error } = useQuery({
     queryKey: ['customers'],
     queryFn: () => airtableApi.getCustomers(),
   });
+
+  const filteredCustomers = useMemo(() => {
+    const list = customers as Customer[];
+    const search = (filters.search || "").toLowerCase().trim();
+    const location = (filters.location || "").toLowerCase().trim();
+    const salesperson = (filters.salesperson || "").toLowerCase().trim();
+
+    return list.filter((customer) => {
+      const name = `${customer.firstName || ""} ${customer.lastName || ""}`.toLowerCase();
+      if (search && !name.includes(search)) return false;
+
+      if (location) {
+        const areas = (customer.areasOfInterest || "").toLowerCase();
+        if (!areas.includes(location)) return false;
+      }
+
+      if (salesperson) {
+        const sp = (customer.salesperson || "").toLowerCase().trim();
+        if (sp !== salesperson) return false;
+      }
+
+      return true;
+    });
+  }, [customers, filters.search, filters.location, filters.salesperson]);
+
+  useEffect(() => {
+    onCountChange?.(filteredCustomers.length);
+  }, [filteredCustomers.length, onCountChange]);
 
   if (isLoading) {
     return (
@@ -43,7 +72,7 @@ const CustomerList = () => {
         <div className="font-semibold text-gray-700 text-sm text-left">Actions</div>
       </div>
 
-      {customers.map((customer) => (
+      {filteredCustomers.map((customer) => (
         <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(`/customers/${customer.id}`)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/customers/${customer.id}`) }}>
           <CardContent className="p-4">
             <div 

@@ -2,12 +2,16 @@
 import Navigation from "@/components/Navigation";
 import CustomerFilters from "@/components/CustomerFilters";
 import CustomerList from "@/components/CustomerList";
+import { useState } from "react";
+import { CustomerFiltersValue } from "@/types/filters";
 
 interface CustomersProps {
   onLogout?: () => void;
 }
 
 const Customers = ({ onLogout }: CustomersProps) => {
+  const [filters, setFilters] = useState<CustomerFiltersValue>({ search: "", location: "", salesperson: "" });
+  const [resultsCount, setResultsCount] = useState<number>(0);
   return (
     <div className="min-h-screen bg-laine-grey">
       <Navigation onLogout={onLogout} />
@@ -21,16 +25,16 @@ const Customers = ({ onLogout }: CustomersProps) => {
             </button>
           </div>
           
-          <CustomerFilters />
+          <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters({ search: "", location: "", salesperson: "" })} />
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-800">Customer List</h2>
-            <p className="text-sm text-gray-600">15 customers found</p>
+            <p className="text-sm text-gray-600">{resultsCount} customers found</p>
           </div>
           
-          <CustomerList />
+          <CustomerList filters={filters} onCountChange={setResultsCount} />
         </div>
       </div>
     </div>
