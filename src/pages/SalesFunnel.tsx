@@ -146,11 +146,8 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const [phaseOverrides, setPhaseOverrides] = useState<Record<string, PhaseKey>>({});
 
   const getPhaseFor = (c: Customer): PhaseKey => {
-    // If explicitly marked as property shown and no specific timeline yet
-    if (c.nextActionType === "Property shown" && !(c.timeOfPurchase && c.timeOfPurchase.trim())) {
-      return "Property shown";
-    }
     const v = (c.timeOfPurchase || "").toLowerCase();
+    if (v.includes("property shown")) return "Property shown";
     if (v.includes("1-3") || v.includes("0-3")) return "0-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
@@ -253,8 +250,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     // Prepare payload for persistence
     let payload: Partial<Customer> = {};
     if (targetPhase === "Property shown") {
-      const today = new Date().toISOString().slice(0, 10);
-      payload = { nextActionType: "Property shown", nextActionDate: today };
+      payload = { timeOfPurchase: "Property shown" };
     } else if (targetPhase === "0-3 mo") {
       payload = { timeOfPurchase: "1-3 months" };
     } else if (targetPhase === "3-6 mo") {
