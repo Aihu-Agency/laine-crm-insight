@@ -13,12 +13,17 @@ const ActionRequiredCard = () => {
   const [showEveryone, setShowEveryone] = useState(false);
   const [limit, setLimit] = useState(10);
   const [userFullName, setUserFullName] = useState<string | null>(null);
+  const [userFirstName, setUserFirstName] = useState<string | null>(null);
+
+  const normalizeName = (s?: string | null) =>
+    (s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   useEffect(() => {
     const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setUserFullName(null);
+        setUserFirstName(null);
         return;
       }
       const { data, error } = await supabase
@@ -26,11 +31,19 @@ const ActionRequiredCard = () => {
         .select('first_name, last_name')
         .eq('id', user.id)
         .single();
+
       if (!error && data) {
-        const full = `${data.first_name || ''} ${data.last_name || ''}`.trim();
-        setUserFullName(full || null);
+        const first = data.first_name || null;
+        const last = data.last_name || null;
+        const full = `${first || ''} ${last || ''}`.trim() || null;
+        setUserFirstName(first);
+        setUserFullName(full);
       } else {
-        setUserFullName(null);
+        const metaFirst = (user.user_metadata?.first_name as string) || null;
+        const metaLast = (user.user_metadata?.last_name as string) || null;
+        const fullMeta = `${metaFirst || ''} ${metaLast || ''}`.trim() || null;
+        setUserFirstName(metaFirst);
+        setUserFullName(fullMeta);
       }
     };
     loadProfile();
@@ -44,9 +57,13 @@ const ActionRequiredCard = () => {
   const filteredSorted = customers
     .filter(c => !!c.nextActionDate)
     .filter(c => {
-      if (showEveryone || !userFullName) return true;
-      const sp = (c.salesperson || '').trim().toLowerCase();
-      return sp === userFullName.trim().toLowerCase();
+      if (showEveryone) return true;
+      const sp = normalizeName(c.salesperson);
+      const hasName = !!userFullName || !!userFirstName;
+      if (!hasName) return true;
+      const full = normalizeName(userFullName);
+      const first = normalizeName(userFirstName);
+      return sp === full || sp === first;
     })
     .sort((a, b) => {
       const da = new Date(a.nextActionDate!);
