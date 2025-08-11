@@ -11,11 +11,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
 import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "./Navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddClientFormProps {
   onSave: () => void;
@@ -59,6 +60,26 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   );
   const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
   const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
+
+  // Load salespeople from Supabase
+  const { data: salespeople, isLoading: spLoading } = useQuery({
+    queryKey: ['salespeople'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_salespeople');
+      if (error) throw error;
+      return (data ?? []).map((p: any) => ({
+        id: p.user_id as string,
+        firstName: (p.first_name as string | null) ?? null,
+        lastName: (p.last_name as string | null) ?? null,
+      }));
+    },
+  });
+
+  const salespersonOptions = (salespeople ?? []).map((p: any) => {
+    const fn = (p.firstName || '').trim();
+    const ln = (p.lastName || '').trim();
+    return fn || ln || 'Unknown';
+  });
 
   const createCustomerMutation = useMutation({
     mutationFn: (customerData: Partial<Customer>) => airtableApi.createCustomer(customerData),
@@ -306,11 +327,16 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                       <SelectTrigger>
                         <SelectValue placeholder="Select salesperson" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Laura">Laura</SelectItem>
-                        <SelectItem value="Anna">Anna</SelectItem>
-                        <SelectItem value="Mikko">Mikko</SelectItem>
-                        <SelectItem value="Sari">Sari</SelectItem>
+                      <SelectContent className="z-50">
+                        {spLoading ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : (salespersonOptions.length ? (
+                          salespersonOptions.map((name: string, idx: number) => (
+                            <SelectItem key={`${name}-${idx}`} value={name}>{name}</SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>No salespeople</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
