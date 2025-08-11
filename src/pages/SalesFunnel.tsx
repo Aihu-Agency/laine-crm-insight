@@ -151,7 +151,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       return "Property shown";
     }
     const v = (c.timeOfPurchase || "").toLowerCase();
-    if (v.includes("0-3")) return "0-3 mo";
+    if (v.includes("1-3") || v.includes("0-3")) return "0-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
     return "Later";
@@ -256,11 +256,11 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       const today = new Date().toISOString().slice(0, 10);
       payload = { nextActionType: "Property shown", nextActionDate: today };
     } else if (targetPhase === "0-3 mo") {
-      payload = { timeOfPurchase: "0-3 mo" };
+      payload = { timeOfPurchase: "1-3 months" };
     } else if (targetPhase === "3-6 mo") {
-      payload = { timeOfPurchase: "3-6 mo" };
+      payload = { timeOfPurchase: "3-6 months" };
     } else if (targetPhase === "6-12 mo") {
-      payload = { timeOfPurchase: "6-12 mo" };
+      payload = { timeOfPurchase: "6-12 months" };
     } else if (targetPhase === "Later") {
       payload = { timeOfPurchase: "Later" };
     }

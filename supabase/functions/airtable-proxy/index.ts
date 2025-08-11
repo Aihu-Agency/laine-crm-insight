@@ -240,24 +240,24 @@ serve(async (req) => {
           })
         })
         const data = await response.json()
+        if (!response.ok) {
+          console.error('[Airtable Proxy] Failed to update customer action', data)
+          return new Response(JSON.stringify({
+            error: 'Failed to update customer action',
+            details: data,
+            requestData: requestBody,
+            airtableError: true,
+            status: response.status
+          }), {
+            status: response.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
-      } else if (actualMethod === 'DELETE') {
-        // Delete a customer action
-        const actionId = path.split('/')[2]
-        airtableUrl += `/${actionId}`
-        const response = await fetch(airtableUrl, {
-          method: 'DELETE',
-          headers: airtableHeaders,
-        })
-        const text = await response.text()
-        // Airtable returns empty body on delete success
-        return new Response(text || JSON.stringify({ success: response.ok }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
+    }
+
     } else if (path.startsWith('/customers')) {
       if (actualMethod === 'GET') {
         // Get all customers or a specific customer
@@ -275,7 +275,6 @@ serve(async (req) => {
             fields: requestBody
           })
         })
-        
         console.log('[Airtable Proxy] Airtable response status:', response.status)
         const data = await response.json()
         console.log('[Airtable Proxy] Airtable response data:', data)
@@ -311,12 +310,25 @@ serve(async (req) => {
           })
         })
         const data = await response.json()
+        if (!response.ok) {
+          console.error('[Airtable Proxy] Failed to update customer', data)
+          return new Response(JSON.stringify({
+            error: 'Failed to update customer',
+            details: data,
+            requestData: requestBody,
+            airtableError: true,
+            status: response.status
+          }), {
+            status: response.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-    }
 
+    
     // Forward the request to Airtable
     console.log('[Airtable Proxy] Forwarding request to:', airtableUrl)
     const response = await fetch(airtableUrl, {
