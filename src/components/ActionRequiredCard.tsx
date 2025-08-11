@@ -1,146 +1,110 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { airtableApi } from "@/services/airtableApi";
 
 const ActionRequiredCard = () => {
   const navigate = useNavigate();
-  const [showMoreActions, setShowMoreActions] = useState(false);
 
-  const initialActionRequiredCustomers = [
-    {
-      name: "Mikko Tuominen",
-      action: "Call 14.7.2025",
-      priority: "high" as const
-    },
-    {
-      name: "Otso Lindfors", 
-      action: "Email 15.7.2025",
-      priority: "medium" as const
-    },
-    {
-      name: "Tiina Källi",
-      action: "Contact in July",
-      priority: "low" as const
-    },
-    {
-      name: "Tommi Perälä",
-      action: "Call 14.7.2025 at 13:00",
-      priority: "high" as const
-    },
-    {
-      name: "Tiina Källi",
-      action: "Not contacted in 3 months",
-      priority: "medium" as const
-    }
-  ];
+  const [showEveryone, setShowEveryone] = useState(false);
+  const [limit, setLimit] = useState(10);
+  const [userFullName, setUserFullName] = useState<string | null>(null);
 
-  const additionalActionRequiredCustomers = [
-    {
-      name: "Marja Virtanen",
-      action: "Schedule meeting 16.7.2025",
-      priority: "high" as const
-    },
-    {
-      name: "Jukka Nieminen",
-      action: "Send property list",
-      priority: "medium" as const
-    },
-    {
-      name: "Anna Korhonen",
-      action: "Follow up on proposal",
-      priority: "high" as const
-    },
-    {
-      name: "Petri Hakala",
-      action: "Call 17.7.2025",
-      priority: "low" as const
-    },
-    {
-      name: "Sari Laakso",
-      action: "Email property details",
-      priority: "medium" as const
-    },
-    {
-      name: "Markus Rantala",
-      action: "Schedule viewing",
-      priority: "high" as const
-    },
-    {
-      name: "Liisa Mäkinen",
-      action: "Not contacted in 2 months",
-      priority: "medium" as const
-    },
-    {
-      name: "Tero Jokinen",
-      action: "Call 18.7.2025 at 10:00",
-      priority: "low" as const
-    },
-    {
-      name: "Kirsi Salonen",
-      action: "Send contract draft",
-      priority: "high" as const
-    },
-    {
-      name: "Ville Heikkinen",
-      action: "Follow up on financing",
-      priority: "medium" as const
-    }
-  ];
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setUserFullName(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+      if (!error && data) {
+        const full = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+        setUserFullName(full || null);
+      } else {
+        setUserFullName(null);
+      }
+    };
+    loadProfile();
+  }, []);
 
-  const actionRequiredCustomers = showMoreActions 
-    ? [...initialActionRequiredCustomers, ...additionalActionRequiredCustomers]
-    : initialActionRequiredCustomers;
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ['customers', 'actions'],
+    queryFn: () => airtableApi.getCustomers(),
+  });
+
+  const filteredSorted = customers
+    .filter(c => !!c.nextActionDate)
+    .filter(c => {
+      if (showEveryone || !userFullName) return true;
+      const sp = (c.salesperson || '').trim().toLowerCase();
+      return sp === userFullName.trim().toLowerCase();
+    })
+    .sort((a, b) => {
+      const da = new Date(a.nextActionDate!);
+      const db = new Date(b.nextActionDate!);
+      return da.getTime() - db.getTime();
+    });
+
+  const visible = filteredSorted.slice(0, limit);
 
   const handleShowMore = () => {
-    setShowMoreActions(true);
+    setLimit((l) => l + 20);
   };
 
-  const handleCustomerClick = (customerName: string) => {
-    if (customerName.toLowerCase() === "mikko tuominen") {
-      navigate("/customers/1");
-    }
-  };
-
-  const getPriorityStyles = (priority: "high" | "medium" | "low") => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-50 border-l-4 border-red-400';
-      case 'medium':
-        return 'bg-yellow-50 border-l-4 border-yellow-400';
-      case 'low':
-        return 'bg-laine-blue border-l-4 border-blue-400';
-      default:
-        return 'bg-laine-blue border-l-4 border-blue-400';
-    }
+  const handleCustomerClick = (customerId: string) => {
+    navigate(`/customers/${customerId}`);
   };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-800">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-lg font-semibold">
           Action required
         </CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowEveryone((v) => !v)}
+          aria-label={showEveryone ? "Show my Actions" : "Show everyone's Actions"}
+        >
+          {showEveryone ? "Show my Actions" : "Show everyone’s Actions"}
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {actionRequiredCustomers.map((customer, index) => (
-            <div 
-              key={index} 
-              className={`flex justify-between items-center py-3 px-4 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md hover:scale-[1.01] ${getPriorityStyles(customer.priority)}`}
-              onClick={() => handleCustomerClick(customer.name)}
-            >
-              <span className="font-medium text-gray-800">{customer.name}</span>
-              <span className="text-sm text-gray-600">{customer.action}</span>
-            </div>
-          ))}
-        </div>
-        {!showMoreActions && (
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        ) : visible.length === 0 ? (
+          <div className="text-sm text-muted-foreground">No upcoming actions</div>
+        ) : (
+          <div className="space-y-3">
+            {visible.map((c) => (
+              <div
+                key={c.id}
+                className="flex justify-between items-center py-3 px-4 rounded-lg transition-colors cursor-pointer hover:bg-accent"
+                onClick={() => handleCustomerClick(c.id)}
+              >
+                <span className="font-medium">{`${c.firstName} ${c.lastName}`.trim()}</span>
+                <span className="text-sm text-muted-foreground">
+                  {c.nextActionNote ? `${c.nextActionNote} • ` : ""}
+                  {c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString() : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {filteredSorted.length > limit && (
           <div className="mt-4 text-center">
             <Button 
-              variant="outline" 
-              className="text-primary border-primary hover:bg-primary/10"
+              variant="outline"
               onClick={handleShowMore}
             >
               Show more
@@ -148,8 +112,8 @@ const ActionRequiredCard = () => {
           </div>
         )}
       </CardContent>
-    </Card>
-  );
+      </Card>
+    );
 };
 
 export default ActionRequiredCard;
