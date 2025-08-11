@@ -4,6 +4,7 @@ import CustomerFilters from "@/components/CustomerFilters";
 import CustomerList from "@/components/CustomerList";
 import { useState } from "react";
 import { CustomerFiltersValue } from "@/types/filters";
+import { Link } from "react-router-dom";
 
 interface CustomersProps {
   onLogout?: () => void;
@@ -20,9 +21,9 @@ const Customers = ({ onLogout }: CustomersProps) => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
-            <button className="bg-laine-mint hover:bg-laine-mint/90 text-gray-800 px-4 py-2 rounded font-medium">
+            <Link to="/customers/add" className="bg-laine-mint hover:bg-laine-mint/90 text-gray-800 px-4 py-2 rounded font-medium">
               + Add new customer
-            </button>
+            </Link>
           </div>
           
           <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters({ search: "", location: "", salesperson: "" })} />
