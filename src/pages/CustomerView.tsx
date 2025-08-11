@@ -112,15 +112,6 @@ const CustomerView = () => {
     navigate("/customers");
   };
 
-  const getPhaseColor = (phase: string) => {
-    if (phase.includes("0-3") || phase === "New Lead") return "bg-red-50 text-red-700 border-red-200";
-    if (phase.includes("3-6") || phase === "Qualified Lead") return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    if (phase.includes("6-12") || phase === "Opportunity") return "bg-blue-50 text-blue-700 border-blue-200";
-    if (phase === "Proposal") return "bg-purple-50 text-purple-700 border-purple-200";
-    if (phase === "Closed Won") return "bg-green-50 text-green-700 border-green-200";
-    if (phase === "Closed Lost") return "bg-gray-50 text-gray-700 border-gray-200";
-    return "bg-gray-50 text-gray-700 border-gray-200";
-  };
 
   // Mock suggested properties data
   const suggestedProperties = [
@@ -163,9 +154,6 @@ const CustomerView = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{customerData.firstName} {customerData.lastName}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <Badge className={`${getPhaseColor(customerData.phase)} border`}>
-                  {customerData.phase}
-                </Badge>
                 {customerData.tags?.map((tag, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
                     {tag}

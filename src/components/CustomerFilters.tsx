@@ -17,20 +17,6 @@ const CustomerFilters = () => {
           />
         </div>
         
-        <div className="space-y-2">
-          <Label>Phase</Label>
-          <Select>
-            <SelectTrigger>
-              <SelectValue placeholder="Select phase" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0-3">0-3 months</SelectItem>
-              <SelectItem value="3-6">3-6 months</SelectItem>
-              <SelectItem value="6-12">6-12 months</SelectItem>
-              <SelectItem value="12+">12+ months</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         
         <div className="space-y-2">
           <Label>Location</Label>
