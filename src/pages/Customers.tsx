@@ -11,7 +11,7 @@ interface CustomersProps {
 }
 
 const Customers = ({ onLogout }: CustomersProps) => {
-  const [filters, setFilters] = useState<CustomerFiltersValue>({ search: "", location: "", salesperson: "" });
+  const [filters, setFilters] = useState<CustomerFiltersValue>({ search: "", location: "", salesperson: "", timeOfPurchase: "" });
   const [resultsCount, setResultsCount] = useState<number>(0);
   return (
     <div className="min-h-screen bg-laine-grey">
@@ -26,7 +26,7 @@ const Customers = ({ onLogout }: CustomersProps) => {
             </Link>
           </div>
           
-          <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters({ search: "", location: "", salesperson: "" })} />
+          <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters({ search: "", location: "", salesperson: "", timeOfPurchase: "" })} />
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">

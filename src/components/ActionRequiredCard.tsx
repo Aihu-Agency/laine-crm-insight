@@ -57,6 +57,12 @@ const ActionRequiredCard = () => {
   const filteredSorted = customers
     .filter(c => !!c.nextActionDate)
     .filter(c => {
+      // Exclude actions marked as Done in the note
+      const note = (c.nextActionNote || '').trim();
+      if (/^done\b/i.test(note)) return false;
+      return true;
+    })
+    .filter(c => {
       if (showEveryone) return true;
       const sp = normalizeName(c.salesperson);
       const hasName = !!userFullName || !!userFirstName;

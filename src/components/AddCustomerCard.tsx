@@ -37,14 +37,6 @@ const AddCustomerCard = ({ onContinue }: AddCustomerCardProps) => {
             className="w-full"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="area-interest">Area of interest</Label>
-          <Input 
-            id="area-interest" 
-            placeholder="Enter area"
-            className="w-full"
-          />
-        </div>
         <Button 
           className="w-full bg-laine-mint hover:bg-laine-mint/90 text-gray-800 border-0"
           onClick={handleContinue}

@@ -20,6 +20,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
     const search = (filters.search || "").toLowerCase().trim();
     const location = (filters.location || "").toLowerCase().trim();
     const salesperson = (filters.salesperson || "").toLowerCase().trim();
+    const top = (filters.timeOfPurchase || "").toLowerCase().trim();
 
     return list.filter((customer) => {
       const name = `${customer.firstName || ""} ${customer.lastName || ""}`.toLowerCase();
@@ -35,9 +36,14 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
         if (sp !== salesperson) return false;
       }
 
+      if (top) {
+        const t = (customer.timeOfPurchase || "").toLowerCase().trim();
+        if (t !== top) return false;
+      }
+
       return true;
     });
-  }, [customers, filters.search, filters.location, filters.salesperson]);
+  }, [customers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
 
   useEffect(() => {
     onCountChange?.(filteredCustomers.length);

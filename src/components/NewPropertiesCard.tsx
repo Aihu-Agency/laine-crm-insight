@@ -26,10 +26,11 @@ const NewPropertiesCard = () => {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold text-gray-800">
           New properties available
         </CardTitle>
+        <span className="text-xs text-muted-foreground">Work In Progress</span>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

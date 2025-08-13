@@ -187,7 +187,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   };
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"]; 
-  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Other"]; 
+  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Alhaurin", "Benahavís", "Estepona", "Mijas Costa", "Nueva Andalucía", "Costa del Sol other", "Torrevieja", "Costa Blanca other", "Other"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
   const bathroomOptions = ['1', '2', '3+'];
 
