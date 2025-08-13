@@ -57,9 +57,20 @@ const ActionRequiredCard = () => {
   const filteredSorted = customers
     .filter(c => !!c.nextActionDate)
     .filter(c => {
-      // Exclude actions marked as Done in the note
-      const note = (c.nextActionNote || '').trim();
-      if (/^done\b/i.test(note)) return false;
+      const noteRaw = (c.nextActionNote || '').trim();
+      const typeRaw = (c.nextActionType || '').trim();
+
+      const note = noteRaw.toLowerCase();
+      const type = typeRaw.toLowerCase();
+
+      // Do not exclude if it explicitly says "not done"
+      const mentionsNotDone = /\bnot\s+done\b/.test(note);
+
+      // Exclude if note/type indicate completion (done/completed/complete) or checkmark symbols
+      const hasDoneWord = /\b(done|completed|complete)\b/.test(note) || /\b(done|completed|complete)\b/.test(type);
+      const hasCheckmark = /[✅✔☑]/.test(note) || /[✅✔☑]/.test(type);
+
+      if (!mentionsNotDone && (hasDoneWord || hasCheckmark)) return false;
       return true;
     })
     .filter(c => {
