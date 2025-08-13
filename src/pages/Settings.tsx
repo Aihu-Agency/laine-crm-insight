@@ -26,13 +26,16 @@ const Settings = () => {
   const qc = useQueryClient();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState<string>("");
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       setCurrentUserId(session?.user?.id ?? null);
+      setCurrentEmail(session?.user?.email ?? "");
     });
     supabase.auth.getSession().then(({ data }) => {
       setCurrentUserId(data.session?.user?.id ?? null);
+      setCurrentEmail(data.session?.user?.email ?? "");
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -173,6 +176,8 @@ const Settings = () => {
 
   // Profile form (current user only, uses direct table access)
   const [profile, setProfile] = useState({ first_name: "", last_name: "" });
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   useEffect(() => {
     if (!currentUserId) return;
     supabase
@@ -195,6 +200,25 @@ const Settings = () => {
       toast({ title: "Failed to save profile", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Profile saved" });
+    }
+  };
+
+  const updatePassword = async () => {
+    if (newPassword.length < 6) {
+      toast({ title: "Password too short", description: "Minimum 6 characters", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords do not match", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      toast({ title: "Failed to update password", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Password updated" });
+      setNewPassword("");
+      setConfirmPassword("");
     }
   };
 
@@ -229,13 +253,22 @@ const Settings = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" value={/* ... keep existing code (email display readonly) */ ""} readOnly placeholder="Read-only" />
+              <Input id="email" type="email" value={currentEmail} readOnly placeholder="-" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input id="password" type="password" placeholder="Ask admin to reset" readOnly />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+              </div>
             </div>
-            <Button onClick={saveProfile}>Save Changes</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={updatePassword}>Update Password</Button>
+              <Button onClick={saveProfile}>Save Changes</Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -262,7 +295,7 @@ const Settings = () => {
                 <DialogTrigger asChild>
                   <Button onClick={onOpenAdd}>Add User</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent key={editing ? editing.id : "add"}>
                   <DialogHeader>
                     <DialogTitle>{editing ? "Edit User" : "Add User"}</DialogTitle>
                   </DialogHeader>
