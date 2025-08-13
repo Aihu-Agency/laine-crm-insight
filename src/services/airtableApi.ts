@@ -1,5 +1,6 @@
 import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer, CustomerAction, AirtableCustomerActionResponse, AirtableCustomerAction, transformAirtableCustomerAction } from '@/types/airtable'
 import { supabase } from '@/integrations/supabase/client'
+import { AREA_OPTIONS, normalizeArea } from '@/constants/areas'
 
 class AirtableApiService {
   private async makeRequest(endpoint: string, options: { method?: string; body?: any } = {}) {
@@ -58,15 +59,14 @@ class AirtableApiService {
         // nextCustomerNumber remains 1001
       }
 
-      // Sanitize inputs
-      const AREA_ALLOWED = [
-        'Marbella', 'Puerto Banus', 'Malaga', 'Fuengirola', 'Mijas', 'Torremolinos', 'Other'
-      ] as const;
+      // Normalize Areas of interest
       const rawAreas = customerData.areasOfInterest
-        ? customerData.areasOfInterest.split(',').map(s => s.trim()).filter(Boolean)
+        ? customerData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const sanitizedAreas = rawAreas.filter(a => AREA_ALLOWED.includes(a as any));
-      const invalidAreas = rawAreas.filter(a => !AREA_ALLOWED.includes(a as any));
+      const mapped = rawAreas.map((a) => ({ raw: a, norm: normalizeArea(a) }));
+      const sanitizedAreas = Array.from(new Set(mapped.map((m) => m.norm).filter(Boolean) as string[]));
+      const invalidAreas = mapped.filter((m) => !m.norm).map((m) => m.raw);
+      console.debug('Areas normalization (create):', { rawAreas, sanitizedAreas, invalidAreas });
 
       const airtableFieldsBase: Record<string, any> = {
         'First name': customerData.firstName || '',
@@ -152,15 +152,14 @@ class AirtableApiService {
 
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer & { _warnings?: string[] }> {
     try {
-      // Sanitize inputs
-      const AREA_ALLOWED = [
-        'Marbella', 'Puerto Banus', 'Malaga', 'Fuengirola', 'Mijas', 'Torremolinos', 'Other'
-      ] as const;
+      // Normalize Areas of interest
       const rawAreas = customerData.areasOfInterest
-        ? customerData.areasOfInterest.split(',').map(s => s.trim()).filter(Boolean)
+        ? customerData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const sanitizedAreas = rawAreas.filter(a => AREA_ALLOWED.includes(a as any));
-      const invalidAreas = rawAreas.filter(a => !AREA_ALLOWED.includes(a as any));
+      const mapped = rawAreas.map((a) => ({ raw: a, norm: normalizeArea(a) }));
+      const sanitizedAreas = Array.from(new Set(mapped.map((m) => m.norm).filter(Boolean) as string[]));
+      const invalidAreas = mapped.filter((m) => !m.norm).map((m) => m.raw);
+      console.debug('Areas normalization (update):', { rawAreas, sanitizedAreas, invalidAreas });
 
       const airtableFieldsBase: Record<string, any> = {
         'First name': customerData.firstName,

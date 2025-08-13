@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,7 @@ import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "./Navigation";
 import { supabase } from "@/integrations/supabase/client";
-
+import { AREA_OPTIONS, normalizeArea } from "@/constants/areas";
 interface AddClientFormProps {
   onSave: () => void;
   onCancel: () => void;
@@ -54,10 +54,17 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const [nextActionDate, setNextActionDate] = useState<Date | undefined>(
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
   );
+  
+  // Normalize initial Areas of Interest and track any dropped values
+  const initialAreasRaw = initialData?.areasOfInterest
+    ? initialData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+  const initialAreasMapped = initialAreasRaw.map((a) => ({ raw: a, norm: normalizeArea(a) }));
+  const initialAreasNorm = Array.from(new Set(initialAreasMapped.map((m) => m.norm).filter(Boolean) as string[]));
+  const initialDroppedAreas = initialAreasMapped.filter((m) => !m.norm).map((m) => m.raw);
+
   const [propertyTypes, setPropertyTypes] = useState<string[]>(initialData?.propertyType || []);
-  const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(
-    initialData?.areasOfInterest ? initialData.areasOfInterest.split(', ') : []
-  );
+  const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(initialAreasNorm);
   const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
   const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
   const [customerCategories, setCustomerCategories] = useState<string[]>(
@@ -65,6 +72,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       ? (initialData?.customerCategory as string[])
       : (initialData?.customerCategory ? [initialData.customerCategory as unknown as string] : [])
   );
+  const [droppedAreas] = useState<string[]>(initialDroppedAreas);
 
   // Load salespeople from Supabase
   const { data: salespeople, isLoading: spLoading } = useQuery({
@@ -192,7 +200,6 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   };
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"]; 
-  const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Alhaurin", "Benahavís", "Estepona", "Mijas Costa", "Nueva Andalucía", "Costa del Sol other", "Torrevieja", "Costa Blanca other", "Other"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
   const bathroomOptions = ['1', '2', '3+'];
   const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
@@ -302,14 +309,15 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     <Label htmlFor="customerCategory">Customer Category</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" role="combobox" className="justify-between">
+                        <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
                           {customerCategories.length ? `${customerCategories.length} selected` : 'Select categories'}
+                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-64 p-2">
-                        <div className="space-y-2">
+                      <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                        <div className="space-y-1">
                           {categoryOptions.map((cat) => (
-                            <div key={cat} className="flex items-center space-x-2">
+                            <div key={cat} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
                               <Checkbox
                                 id={`cat-${cat}`}
                                 checked={customerCategories.includes(cat)}
@@ -393,8 +401,11 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Areas of Interest</Label>
+                    {droppedAreas.length > 0 && (
+                      <p className="text-sm text-muted-foreground">Ignored invalid areas: {droppedAreas.join(', ')}</p>
+                    )}
                     <div className="flex flex-wrap gap-4">
-                      {areaOptions.map((area) => (
+                      {AREA_OPTIONS.map((area) => (
                         <div key={area} className="flex items-center space-x-2">
                           <Checkbox 
                             id={`area-${area}`}
