@@ -7,7 +7,7 @@ export interface AirtableCustomer {
     'Email'?: string
     'Language'?: string
     'Customer type'?: string
-    'Customer category'?: string
+    'Customer category'?: string[]
     'Time of purchase'?: string
     'Min price'?: number
     'Max price'?: number
@@ -43,7 +43,7 @@ export interface Customer {
   phase?: string
   language?: string
   customerType?: string
-  customerCategory?: string
+  customerCategory?: string[]
   timeOfPurchase?: string
   minPrice?: number
   maxPrice?: number
@@ -117,7 +117,11 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   phase: 'New Lead', // Default value since this field doesn't exist in Airtable
   language: record.fields['Language'],
   customerType: record.fields['Customer type'],
-  customerCategory: record.fields['Customer category'],
+  customerCategory: (() => {
+    const cc: any = (record.fields as any)['Customer category'];
+    if (!cc) return [];
+    return Array.isArray(cc) ? cc : [cc];
+  })(),
   timeOfPurchase: record.fields['Time of purchase'],
   minPrice: record.fields['Min price'],
   maxPrice: record.fields['Max price'],

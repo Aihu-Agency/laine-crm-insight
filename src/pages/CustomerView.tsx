@@ -220,7 +220,17 @@ const CustomerView = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Customer category</p>
-                    <p className="font-medium">{customerData.customerCategory || '-'}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {Array.isArray(customerData.customerCategory) && customerData.customerCategory.length > 0 ? (
+                        customerData.customerCategory.map((cat, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {cat}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Time of purchase</p>

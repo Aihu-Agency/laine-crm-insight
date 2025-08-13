@@ -36,7 +36,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     
     language: initialData?.language || '',
     customerType: initialData?.customerType || '',
-    customerCategory: initialData?.customerCategory || '',
+    
     timeOfPurchase: initialData?.timeOfPurchase || '',
     minPrice: initialData?.minPrice || undefined as number | undefined,
     maxPrice: initialData?.maxPrice || undefined as number | undefined,
@@ -60,6 +60,11 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   );
   const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
   const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
+  const [customerCategories, setCustomerCategories] = useState<string[]>(
+    Array.isArray(initialData?.customerCategory)
+      ? (initialData?.customerCategory as string[])
+      : (initialData?.customerCategory ? [initialData.customerCategory as unknown as string] : [])
+  );
 
   // Load salespeople from Supabase
   const { data: salespeople, isLoading: spLoading } = useQuery({
@@ -160,7 +165,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       
       language: formData.language,
       customerType: formData.customerType,
-      customerCategory: formData.customerCategory,
+      customerCategory: customerCategories,
       timeOfPurchase: formData.timeOfPurchase,
       minPrice: formData.minPrice,
       maxPrice: formData.maxPrice,
@@ -190,6 +195,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const areaOptions = ["Marbella", "Puerto Banus", "Malaga", "Fuengirola", "Mijas", "Torremolinos", "Alhaurin", "Benahavís", "Estepona", "Mijas Costa", "Nueva Andalucía", "Costa del Sol other", "Torrevieja", "Costa Blanca other", "Other"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
   const bathroomOptions = ['1', '2', '3+'];
+  const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
 
   return (
     <div className="min-h-screen bg-laine-grey">
@@ -294,17 +300,33 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="customerCategory">Customer Category</Label>
-                    <Select value={formData.customerCategory} onValueChange={(value) => setFormData({...formData, customerCategory: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Investor">Investor</SelectItem>
-                        <SelectItem value="Holiday home">Holiday home</SelectItem>
-                        <SelectItem value="Primary residence">Primary residence</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" role="combobox" className="justify-between">
+                          {customerCategories.length ? `${customerCategories.length} selected` : 'Select categories'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-2">
+                        <div className="space-y-2">
+                          {categoryOptions.map((cat) => (
+                            <div key={cat} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`cat-${cat}`}
+                                checked={customerCategories.includes(cat)}
+                                onCheckedChange={(checked) => {
+                                  const isChecked = Boolean(checked);
+                                  setCustomerCategories(isChecked
+                                    ? [...customerCategories, cat]
+                                    : customerCategories.filter((c) => c !== cat)
+                                  );
+                                }}
+                              />
+                              <Label htmlFor={`cat-${cat}`}>{cat}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="timeOfPurchase">Time of Purchase</Label>
