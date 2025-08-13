@@ -125,6 +125,7 @@ const Settings = () => {
 
   const onOpenAdd = () => {
     setEditing(null);
+    setForm({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
     setDialogOpen(true);
   };
 
@@ -246,7 +247,18 @@ const Settings = () => {
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>Manage all users in the system</CardDescription>
               </div>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <Dialog
+                open={dialogOpen}
+                onOpenChange={(open) => {
+                  setDialogOpen(open);
+                  if (!open) {
+                    setEditing(null);
+                    setForm({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
+                  } else if (!editing) {
+                    setForm({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
+                  }
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button onClick={onOpenAdd}>Add User</Button>
                 </DialogTrigger>

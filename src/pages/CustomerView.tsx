@@ -134,7 +134,19 @@ const CustomerView = () => {
       image: "/placeholder.svg"
     }
   ];
-
+  
+  const getTimeOfPurchaseBadge = (v?: string) => {
+    if (!v) return <Badge variant="outline" className="text-xs">-</Badge>;
+    const low = v.toLowerCase();
+    let classes = "text-xs";
+    if (low.includes("property shown")) classes += " bg-green-100 border-green-300 text-green-700";
+    else if (low.includes("1-3") || low.includes("0-3")) classes += " bg-red-100 border-red-300 text-red-700";
+    else if (low.includes("3-6")) classes += " bg-yellow-100 border-yellow-300 text-yellow-800";
+    else if (low.includes("6-12")) classes += " bg-blue-100 border-blue-300 text-blue-700";
+    else classes += " bg-gray-100 border-gray-300 text-gray-700";
+    return <Badge variant="outline" className={classes}>{v}</Badge>;
+  };
+  
   return (
     <div className="min-h-screen bg-laine-grey">
       <Navigation />
@@ -188,42 +200,39 @@ const CustomerView = () => {
                     <p className="text-sm text-gray-500">Phone</p>
                     <p className="font-medium flex items-center">
                       <Phone className="w-4 h-4 mr-2" />
-                      {customerData.phone || 'Not specified'}
+                      {customerData.phone || '-'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
                     <p className="font-medium flex items-center">
                       <Mail className="w-4 h-4 mr-2" />
-                      {customerData.email || 'Not specified'}
+                      {customerData.email || '-'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Language</p>
-                    <p className="font-medium">{customerData.language || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.language || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Customer type</p>
-                    <p className="font-medium">{customerData.customerType || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.customerType || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Customer category</p>
-                    <p className="font-medium">{customerData.customerCategory || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.customerCategory || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Time of purchase</p>
-                    <p className="font-medium">{customerData.timeOfPurchase || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.timeOfPurchase ? <span className="inline-block">{getTimeOfPurchaseBadge(customerData.timeOfPurchase)}</span> : '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Source of contact</p>
-                    <p className="font-medium">{customerData.sourceOfContact || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.sourceOfContact || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Salesperson</p>
-                    <p className="font-medium flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      {customerData.salesperson || 'Not specified'}
-                    </p>
+                    <p className="font-medium">{customerData.salesperson ? `👤 ${customerData.salesperson}` : '-'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -238,18 +247,18 @@ const CustomerView = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Location</p>
-                    <p className="font-medium">{customerData.areasOfInterest || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.areasOfInterest ? `📍 ${customerData.areasOfInterest}` : '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Budget range</p>
                     <p className="font-medium">
                       {customerData.minPrice && customerData.maxPrice
-                        ? `€${customerData.minPrice.toLocaleString()} - €${customerData.maxPrice.toLocaleString()}`
+                        ? `💰 €${customerData.minPrice.toLocaleString()} - €${customerData.maxPrice.toLocaleString()}`
                         : customerData.minPrice
-                        ? `€${customerData.minPrice.toLocaleString()}+`
+                        ? `💰 €${customerData.minPrice.toLocaleString()}+`
                         : customerData.maxPrice
-                        ? `Up to €${customerData.maxPrice.toLocaleString()}`
-                        : 'Not specified'}
+                        ? `💰 Up to €${customerData.maxPrice.toLocaleString()}`
+                        : '-'}
                     </p>
                   </div>
                   <div>
@@ -262,29 +271,29 @@ const CustomerView = () => {
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">Not specified</span>
+                        <span className="text-gray-400 text-sm">-</span>
                       )}
                     </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Bedrooms</p>
-                    <p className="font-medium">{customerData.bedrooms || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.bedrooms || '-'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Bathrooms</p>
-                    <p className="font-medium">{customerData.bathrooms || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.bathrooms || '-'}</p>
                   </div>
                   <div className="lg:col-span-3">
                     <p className="text-sm text-gray-500">Must have</p>
-                    <p className="font-medium">{customerData.mustHave || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.mustHave || '-'}</p>
                   </div>
                   <div className="lg:col-span-3">
                     <p className="text-sm text-gray-500">Nice to have</p>
-                    <p className="font-medium">{customerData.niceToHave || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.niceToHave || '-'}</p>
                   </div>
                   <div className="lg:col-span-3">
                     <p className="text-sm text-gray-500">Neighborhood or address</p>
-                    <p className="font-medium">{customerData.neighborhoodOrAddress || 'Not specified'}</p>
+                    <p className="font-medium">{customerData.neighborhoodOrAddress || '-'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -340,9 +349,9 @@ const CustomerView = () => {
 
             {/* Suggested Properties */}
             <Card>
-              <CardHeader>
-                <CardTitle>Suggested properties</CardTitle>
-              </CardHeader>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">Suggested properties <span className="text-xs text-gray-500">(Work in progress)</span></CardTitle>
+                </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {suggestedProperties.map((property) => (

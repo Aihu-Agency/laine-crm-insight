@@ -19,7 +19,7 @@ import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 
 // Phase keys used in the funnel
-type PhaseKey = "Property shown" | "0-3 mo" | "3-6 mo" | "6-12 mo" | "Later";
+type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later";
 
 interface SalesFunnelProps {
   onLogout?: () => void;
@@ -88,7 +88,7 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
 
   const getPhaseColor = (phase: string) => {
     if (phase === "Property shown") return "bg-green-100 border-green-300";
-    if (phase.includes("0-3")) return "bg-red-100 border-red-300";
+    if (phase.includes("1-3") || phase.includes("0-3")) return "bg-red-100 border-red-300";
     if (phase.includes("3-6")) return "bg-yellow-100 border-yellow-300";
     if (phase.includes("6-12")) return "bg-blue-100 border-blue-300";
     if (phase === "Later") return "bg-gray-100 border-gray-300";
@@ -129,7 +129,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const phases: { key: PhaseKey; title: string }[] = useMemo(
     () => [
       { key: "Property shown", title: "Property Shown" },
-      { key: "0-3 mo", title: "0-3 Months" },
+      { key: "1-3 mo", title: "1-3 Months" },
       { key: "3-6 mo", title: "3-6 Months" },
       { key: "6-12 mo", title: "6-12 Months" },
       { key: "Later", title: "Later" },
@@ -148,7 +148,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const getPhaseFor = (c: Customer): PhaseKey => {
     const v = (c.timeOfPurchase || "").toLowerCase();
     if (v.includes("property shown")) return "Property shown";
-    if (v.includes("1-3") || v.includes("0-3")) return "0-3 mo";
+    if (v.includes("1-3") || v.includes("0-3")) return "1-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
     return "Later";
@@ -251,7 +251,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     let payload: Partial<Customer> = {};
     if (targetPhase === "Property shown") {
       payload = { timeOfPurchase: "Property shown" };
-    } else if (targetPhase === "0-3 mo") {
+    } else if (targetPhase === "1-3 mo") {
       payload = { timeOfPurchase: "1-3 months" };
     } else if (targetPhase === "3-6 mo") {
       payload = { timeOfPurchase: "3-6 months" };
