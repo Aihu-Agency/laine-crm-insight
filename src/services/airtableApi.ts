@@ -94,6 +94,17 @@ class AirtableApiService {
         'Customer number': nextCustomerNumber,
       };
 
+      // Prepare warnings and sanitize fields
+      let warnings: string[] = [];
+      // Sanitize unsupported Bedrooms (>= 4): omit to avoid Airtable 422
+      if (Array.isArray(airtableFieldsBase['Bedrooms'])) {
+        const bVal = parseInt(airtableFieldsBase['Bedrooms'][0]);
+        if (!isNaN(bVal) && bVal >= 4) {
+          delete airtableFieldsBase['Bedrooms']
+          warnings.push('Bedrooms 4+ is not supported and was omitted.')
+        }
+      }
+
       // Remove undefined values and empty strings to avoid Airtable errors
       const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
         const value = airtableFieldsBase[key];
@@ -101,7 +112,6 @@ class AirtableApiService {
         return acc;
       }, {} as Record<string, any>);
 
-      let warnings: string[] = [];
       if (invalidAreas.length) {
         warnings.push(`Ignored invalid Areas of interest: ${invalidAreas.join(', ')}`);
       }
@@ -131,8 +141,18 @@ class AirtableApiService {
         if (msg.includes('422')) {
           // Retry without Areas of interest
           const retryFields = { ...cleanFields };
-          if (retryFields['Areas of interest']) delete retryFields['Areas of interest'];
-          warnings.push('Areas of interest were removed due to invalid values.');
+          if (retryFields['Areas of interest']) {
+            delete retryFields['Areas of interest'];
+            warnings.push('Areas of interest were removed due to invalid values.');
+          }
+          if (retryFields['Bedrooms']) {
+            delete retryFields['Bedrooms'];
+            warnings.push('Bedrooms were removed due to unsupported value.');
+          }
+          if (retryFields['Bathrooms']) {
+            delete retryFields['Bathrooms'];
+            warnings.push('Bathrooms were removed due to unsupported value.');
+          }
 
           const record: AirtableCustomer = await this.makeRequest('/customers', {
             method: 'POST',
@@ -188,6 +208,17 @@ class AirtableApiService {
         'Customer number': customerData.customerNumber,
       };
 
+      // Prepare warnings and sanitize fields
+      let warnings: string[] = [];
+      // Sanitize unsupported Bedrooms (>= 4): omit to avoid Airtable 422
+      if (Array.isArray(airtableFieldsBase['Bedrooms'])) {
+        const bVal = parseInt(airtableFieldsBase['Bedrooms'][0]);
+        if (!isNaN(bVal) && bVal >= 4) {
+          delete airtableFieldsBase['Bedrooms']
+          warnings.push('Bedrooms 4+ is not supported and was omitted.');
+        }
+      }
+
       // Remove undefined values and empty strings
       const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
         const value = airtableFieldsBase[key];
@@ -195,7 +226,6 @@ class AirtableApiService {
         return acc;
       }, {} as Record<string, any>);
 
-      let warnings: string[] = [];
       if (invalidAreas.length) {
         warnings.push(`Ignored invalid Areas of interest: ${invalidAreas.join(', ')}`);
       }
@@ -212,8 +242,18 @@ class AirtableApiService {
         const msg = (err && (err.message || err.toString())) || '';
         if (msg.includes('422')) {
           const retryFields = { ...cleanFields };
-          if (retryFields['Areas of interest']) delete retryFields['Areas of interest'];
-          warnings.push('Areas of interest were removed due to invalid values.');
+          if (retryFields['Areas of interest']) {
+            delete retryFields['Areas of interest'];
+            warnings.push('Areas of interest were removed due to invalid values.');
+          }
+          if (retryFields['Bedrooms']) {
+            delete retryFields['Bedrooms'];
+            warnings.push('Bedrooms were removed due to unsupported value.');
+          }
+          if (retryFields['Bathrooms']) {
+            delete retryFields['Bathrooms'];
+            warnings.push('Bathrooms were removed due to unsupported value.');
+          }
           const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
             method: 'PATCH',
             body: retryFields,
