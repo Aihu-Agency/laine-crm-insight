@@ -49,7 +49,7 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
         </div>
         <div className="space-y-2">
           <Label>Location</Label>
-          <Select value={value.location || undefined} onValueChange={(v) => onChange({ ...value, location: v })}>
+          <Select key={`location-${value.location ?? 'empty'}`} value={value.location || undefined} onValueChange={(v) => onChange({ ...value, location: v })}>
             <SelectTrigger>
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
@@ -74,7 +74,7 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
         </div>
         <div className="space-y-2">
           <Label>Salesperson</Label>
-          <Select value={value.salesperson || undefined} onValueChange={(v) => onChange({ ...value, salesperson: v })}>
+          <Select key={`salesperson-${value.salesperson ?? 'empty'}`} value={value.salesperson || undefined} onValueChange={(v) => onChange({ ...value, salesperson: v })}>
             <SelectTrigger>
               <SelectValue placeholder="Select salesperson" />
             </SelectTrigger>
@@ -93,7 +93,7 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
         </div>
         <div className="space-y-2">
           <Label>Time of Purchase</Label>
-          <Select value={value.timeOfPurchase || undefined} onValueChange={(v) => onChange({ ...value, timeOfPurchase: v })}>
+          <Select key={`time-${value.timeOfPurchase ?? 'empty'}`} value={value.timeOfPurchase || undefined} onValueChange={(v) => onChange({ ...value, timeOfPurchase: v })}>
             <SelectTrigger>
               <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
