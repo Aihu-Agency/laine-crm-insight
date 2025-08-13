@@ -200,7 +200,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   };
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"]; 
-  const bedroomOptions = ['1', '2', '3'];
+  const bedroomOptions = ['1', '2', '3', '4+'];
   const bathroomOptions = ['1', '2', '3+'];
   const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
 
@@ -453,17 +453,17 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="bedrooms">Bedrooms</Label>
-                      <Select value={bedrooms?.toString() || ""} onValueChange={(value) => setBedrooms(value ? parseInt(value) : undefined)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select bedrooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bedroomOptions.map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <Label htmlFor="bedrooms">Bedrooms</Label>
+                    <Select value={bedrooms === 4 ? '4+' : (bedrooms?.toString() || "")} onValueChange={(value) => setBedrooms(value ? (value === '4+' ? 4 : parseInt(value)) : undefined)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select bedrooms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bedroomOptions.map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     </div>
 
                     <div className="space-y-2">

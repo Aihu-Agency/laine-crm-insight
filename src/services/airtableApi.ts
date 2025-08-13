@@ -86,24 +86,30 @@ class AirtableApiService {
         'Sales person': customerData.salesperson,
         'Source of contact': customerData.sourceOfContact,
         'Type of apartment': customerData.propertyType,
-        'Bedrooms': customerData.bedrooms ? [customerData.bedrooms.toString()] : undefined,
-        'Bathrooms': customerData.bathrooms ? [customerData.bathrooms.toString()] : undefined,
+        'Bedrooms': (() => {
+          const b: any = (customerData as any).bedrooms
+          if (b === undefined || b === null) return undefined
+          const str = typeof b === 'number' ? (b >= 4 ? '4+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
+          return [str]
+        })(),
+        'Bathrooms': (() => {
+          const b: any = (customerData as any).bathrooms
+          if (b === undefined || b === null) return undefined
+          const str = typeof b === 'number' ? (b >= 3 ? '3+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
+          return [str]
+        })(),
         'Notes': customerData.notes,
         'Next Action Date': customerData.nextActionDate,
         'Next Action Note': customerData.nextActionNote,
         'Customer number': nextCustomerNumber,
       };
 
-      // Prepare warnings and sanitize fields
-      let warnings: string[] = [];
-      // Sanitize unsupported Bedrooms (>= 4): omit to avoid Airtable 422
-      if (Array.isArray(airtableFieldsBase['Bedrooms'])) {
-        const bVal = parseInt(airtableFieldsBase['Bedrooms'][0]);
-        if (!isNaN(bVal) && bVal >= 4) {
-          delete airtableFieldsBase['Bedrooms']
-          warnings.push('Bedrooms 4+ is not supported and was omitted.')
-        }
-      }
+      // Prepare warnings
+      let warnings: string[] = []
+      console.debug('Create customer mapping', {
+        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms },
+        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'] }
+      })
 
       // Remove undefined values and empty strings to avoid Airtable errors
       const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
@@ -199,8 +205,18 @@ class AirtableApiService {
         'Sales person': customerData.salesperson,
         'Source of contact': customerData.sourceOfContact,
         'Type of apartment': customerData.propertyType,
-        'Bedrooms': customerData.bedrooms ? [customerData.bedrooms.toString()] : undefined,
-        'Bathrooms': customerData.bathrooms ? [customerData.bathrooms.toString()] : undefined,
+        'Bedrooms': (() => {
+          const b: any = (customerData as any).bedrooms
+          if (b === undefined || b === null) return undefined
+          const str = typeof b === 'number' ? (b >= 4 ? '4+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
+          return [str]
+        })(),
+        'Bathrooms': (() => {
+          const b: any = (customerData as any).bathrooms
+          if (b === undefined || b === null) return undefined
+          const str = typeof b === 'number' ? (b >= 3 ? '3+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
+          return [str]
+        })(),
         'Notes': customerData.notes,
         'Next Action Date': customerData.nextActionDate,
         'Next Action Type': customerData.nextActionType,
@@ -208,16 +224,12 @@ class AirtableApiService {
         'Customer number': customerData.customerNumber,
       };
 
-      // Prepare warnings and sanitize fields
-      let warnings: string[] = [];
-      // Sanitize unsupported Bedrooms (>= 4): omit to avoid Airtable 422
-      if (Array.isArray(airtableFieldsBase['Bedrooms'])) {
-        const bVal = parseInt(airtableFieldsBase['Bedrooms'][0]);
-        if (!isNaN(bVal) && bVal >= 4) {
-          delete airtableFieldsBase['Bedrooms']
-          warnings.push('Bedrooms 4+ is not supported and was omitted.');
-        }
-      }
+      // Prepare warnings
+      let warnings: string[] = []
+      console.debug('Update customer mapping', {
+        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms },
+        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'] }
+      })
 
       // Remove undefined values and empty strings
       const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
