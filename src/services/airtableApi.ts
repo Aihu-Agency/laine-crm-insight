@@ -84,7 +84,14 @@ class AirtableApiService {
         'Nice to have': customerData.niceToHave,
         'Neighborhood or address': customerData.neighborhoodOrAddress,
         'Sales person': customerData.salesperson,
-        'Source of contact': customerData.sourceOfContact,
+        'Source of contact': (() => {
+          const source = customerData.sourceOfContact;
+          if (Array.isArray(source)) return source.length ? source : undefined;
+          if (typeof source === 'string' && source.trim()) {
+            return source.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          return undefined;
+        })(),
         'Type of apartment': customerData.propertyType,
         'Bedrooms': (() => {
           const b: any = (customerData as any).bedrooms
@@ -107,8 +114,8 @@ class AirtableApiService {
       // Prepare warnings
       let warnings: string[] = []
       console.debug('Create customer mapping', {
-        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms },
-        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'] }
+        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms, sourceOfContact: customerData.sourceOfContact },
+        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'], sourceOfContact: airtableFieldsBase['Source of contact'] }
       })
 
       // Remove undefined values and empty strings to avoid Airtable errors
@@ -159,6 +166,10 @@ class AirtableApiService {
             delete retryFields['Bathrooms'];
             warnings.push('Bathrooms were removed due to unsupported value.');
           }
+          if (retryFields['Source of contact']) {
+            delete retryFields['Source of contact'];
+            warnings.push('Source of contact was removed due to unsupported value.');
+          }
 
           const record: AirtableCustomer = await this.makeRequest('/customers', {
             method: 'POST',
@@ -203,7 +214,14 @@ class AirtableApiService {
         'Nice to have': customerData.niceToHave,
         'Neighborhood or address': customerData.neighborhoodOrAddress,
         'Sales person': customerData.salesperson,
-        'Source of contact': customerData.sourceOfContact,
+        'Source of contact': (() => {
+          const source = customerData.sourceOfContact;
+          if (Array.isArray(source)) return source.length ? source : undefined;
+          if (typeof source === 'string' && source.trim()) {
+            return source.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          return undefined;
+        })(),
         'Type of apartment': customerData.propertyType,
         'Bedrooms': (() => {
           const b: any = (customerData as any).bedrooms
@@ -227,8 +245,8 @@ class AirtableApiService {
       // Prepare warnings
       let warnings: string[] = []
       console.debug('Update customer mapping', {
-        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms },
-        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'] }
+        raw: { bedrooms: customerData.bedrooms, bathrooms: customerData.bathrooms, sourceOfContact: customerData.sourceOfContact },
+        mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'], sourceOfContact: airtableFieldsBase['Source of contact'] }
       })
 
       // Remove undefined values and empty strings
@@ -265,6 +283,10 @@ class AirtableApiService {
           if (retryFields['Bathrooms']) {
             delete retryFields['Bathrooms'];
             warnings.push('Bathrooms were removed due to unsupported value.');
+          }
+          if (retryFields['Source of contact']) {
+            delete retryFields['Source of contact'];
+            warnings.push('Source of contact was removed due to unsupported value.');
           }
           const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
             method: 'PATCH',

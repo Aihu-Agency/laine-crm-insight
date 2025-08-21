@@ -16,7 +16,7 @@ export interface AirtableCustomer {
     'Nice to have'?: string
     'Neighborhood or address'?: string
     'Sales person'?: string
-    'Source of contact'?: string
+    'Source of contact'?: string[]
     'Type of apartment'?: string[]
     'Bedrooms'?: string[]
     'Bathrooms'?: string[]
@@ -52,7 +52,7 @@ export interface Customer {
   niceToHave?: string
   neighborhoodOrAddress?: string
   salesperson?: string
-  sourceOfContact?: string
+  sourceOfContact?: string | string[]
   lastContact?: string
   propertyType?: string[]
   bedrooms?: number
@@ -130,7 +130,9 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   niceToHave: record.fields['Nice to have'],
   neighborhoodOrAddress: record.fields['Neighborhood or address'],
   salesperson: record.fields['Sales person'],
-  sourceOfContact: record.fields['Source of contact'],
+  sourceOfContact: Array.isArray(record.fields['Source of contact']) 
+    ? record.fields['Source of contact'].join(', ') 
+    : record.fields['Source of contact'],
   lastContact: undefined, // Field doesn't exist in Airtable
   propertyType: record.fields['Type of apartment'],
   bedrooms: record.fields['Bedrooms']?.[0] ? parseInt(record.fields['Bedrooms'][0]) : undefined,

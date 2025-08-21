@@ -45,11 +45,51 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     niceToHave: initialData?.niceToHave || '',
     neighborhoodOrAddress: initialData?.neighborhoodOrAddress || '',
     salesperson: initialData?.salesperson || '',
-    sourceOfContact: initialData?.sourceOfContact || '',
     notes: initialData?.notes || '',
     
     nextActionNote: initialData?.nextActionNote || '',
   });
+
+  // Source of Contact options and state
+  const SOURCE_OF_CONTACT_OPTIONS = [
+    'Chat',
+    'Contact form, property link from web page',
+    'Customer reference',
+    'Direct email contact',
+    'Direct phone contact',
+    'Etuovi',
+    'Facebook or Instagram',
+    'Idealista',
+    'Loading brochure from website',
+    'Matkamessut',
+    'Oikotie',
+    'Other',
+    'Place in the Sun',
+    'Property listing',
+    'Seminars',
+    'Spainhouses',
+    'Visiting office'
+  ];
+
+  const [selectedSourceOfContact, setSelectedSourceOfContact] = useState<string[]>(() => {
+    if (initialData?.sourceOfContact) {
+      if (Array.isArray(initialData.sourceOfContact)) {
+        return initialData.sourceOfContact.filter(contact => SOURCE_OF_CONTACT_OPTIONS.includes(contact));
+      } else {
+        const contacts = initialData.sourceOfContact.split(',').map(s => s.trim()).filter(Boolean);
+        return contacts.filter(contact => SOURCE_OF_CONTACT_OPTIONS.includes(contact));
+      }
+    }
+    return [];
+  });
+
+  // Budget formatting state
+  const [minPriceText, setMinPriceText] = useState(() => 
+    initialData?.minPrice ? initialData.minPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
+  );
+  const [maxPriceText, setMaxPriceText] = useState(() => 
+    initialData?.maxPrice ? initialData.maxPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : ''
+  );
 
   const [nextActionDate, setNextActionDate] = useState<Date | undefined>(
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
@@ -162,6 +202,33 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     }
   };
 
+  const handleSourceOfContactChange = (source: string, checked: boolean) => {
+    if (checked) {
+      setSelectedSourceOfContact([...selectedSourceOfContact, source]);
+    } else {
+      setSelectedSourceOfContact(selectedSourceOfContact.filter(s => s !== source));
+    }
+  };
+
+  const formatPriceInput = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPriceInput(e.target.value);
+    setMinPriceText(formatted);
+    const numericValue = formatted.replace(/\s/g, '');
+    setFormData({...formData, minPrice: numericValue ? parseInt(numericValue) : undefined});
+  };
+
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPriceInput(e.target.value);
+    setMaxPriceText(formatted);
+    const numericValue = formatted.replace(/\s/g, '');
+    setFormData({...formData, maxPrice: numericValue ? parseInt(numericValue) : undefined});
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -182,7 +249,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       niceToHave: formData.niceToHave,
       neighborhoodOrAddress: formData.neighborhoodOrAddress,
       salesperson: formData.salesperson,
-      sourceOfContact: formData.sourceOfContact,
+      sourceOfContact: selectedSourceOfContact,
       propertyType: propertyTypes,
       bedrooms,
       bathrooms,
@@ -199,7 +266,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     }
   };
 
-  const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex"]; 
+  const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex", "Town house", "Semi-detached"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
   const bathroomOptions = ['1', '2', '3+'];
   const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
@@ -277,12 +344,28 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="sourceOfContact">Source of Contact</Label>
-                    <Input 
-                      id="sourceOfContact" 
-                      value={formData.sourceOfContact}
-                      onChange={(e) => setFormData({...formData, sourceOfContact: e.target.value})}
-                      placeholder="Enter source of contact"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                          {selectedSourceOfContact.length ? `${selectedSourceOfContact.length} selected` : 'Select source of contact'}
+                          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                        <div className="space-y-1">
+                          {SOURCE_OF_CONTACT_OPTIONS.map((source) => (
+                            <div key={source} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                              <Checkbox
+                                id={`source-${source}`}
+                                checked={selectedSourceOfContact.includes(source)}
+                                onCheckedChange={(checked) => handleSourceOfContactChange(source, Boolean(checked))}
+                              />
+                              <Label htmlFor={`source-${source}`}>{source}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </div>
@@ -302,6 +385,8 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                       <SelectContent>
                         <SelectItem value="Buyer">Buyer</SelectItem>
                         <SelectItem value="Renter">Renter</SelectItem>
+                        <SelectItem value="Seller">Seller</SelectItem>
+                        <SelectItem value="Rental owner">Rental owner</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -383,20 +468,20 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     <Label htmlFor="minPrice">Min Price (€)</Label>
                     <Input 
                       id="minPrice" 
-                      type="number"
-                      value={formData.minPrice || ''}
-                      onChange={(e) => setFormData({...formData, minPrice: e.target.value ? parseInt(e.target.value) : undefined})}
-                      placeholder="e.g., 300000"
+                      type="text"
+                      value={minPriceText}
+                      onChange={handleMinPriceChange}
+                      placeholder="e.g., 300 000"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="maxPrice">Max Price (€)</Label>
                     <Input 
                       id="maxPrice" 
-                      type="number"
-                      value={formData.maxPrice || ''}
-                      onChange={(e) => setFormData({...formData, maxPrice: e.target.value ? parseInt(e.target.value) : undefined})}
-                      placeholder="e.g., 500000"
+                      type="text"
+                      value={maxPriceText}
+                      onChange={handleMaxPriceChange}
+                      placeholder="e.g., 500 000"
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
