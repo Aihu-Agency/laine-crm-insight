@@ -67,9 +67,9 @@ const ActionRequiredCard = () => {
       const mentionsNotDone = /\bnot\s+done\b/.test(note);
 
       // Exclude if note/type indicate completion or checkmark symbols
-      const completionPatterns = /\b(done|completed?|complete|finished|closed)\b/;
+      const completionPatterns = /\b(done|completed?|complete|finished|closed|resolved|cancelled|canceled|archived|ended|accomplished|fulfilled|achieved)\b/;
       const hasCompletionWord = completionPatterns.test(note) || completionPatterns.test(type);
-      const hasCheckmark = /[✅✔☑]/.test(note) || /[✅✔☑]/.test(type);
+      const hasCheckmark = /[✅✔☑✓×❌🗸🗹]/.test(note) || /[✅✔☑✓×❌🗸🗹]/.test(type);
 
       if (!mentionsNotDone && (hasCompletionWord || hasCheckmark)) return false;
       return true;
