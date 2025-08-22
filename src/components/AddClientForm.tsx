@@ -17,7 +17,8 @@ import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "./Navigation";
 import { supabase } from "@/integrations/supabase/client";
-import { AREA_OPTIONS, normalizeArea } from "@/constants/areas";
+import { areasTree, normalizeAndValidateAreas } from "@/constants/areas-tree";
+import { HierarchicalMultiSelect } from "@/components/HierarchicalMultiSelect";
 interface AddClientFormProps {
   onSave: () => void;
   onCancel: () => void;
@@ -99,12 +100,11 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const initialAreasRaw = initialData?.areasOfInterest
     ? initialData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
     : [];
-  const initialAreasMapped = initialAreasRaw.map((a) => ({ raw: a, norm: normalizeArea(a) }));
-  const initialAreasNorm = Array.from(new Set(initialAreasMapped.map((m) => m.norm).filter(Boolean) as string[]));
-  const initialDroppedAreas = initialAreasMapped.filter((m) => !m.norm).map((m) => m.raw);
+  const validatedInitialAreas = normalizeAndValidateAreas(initialAreasRaw);
+  const droppedAreas = initialAreasRaw.filter(area => !validatedInitialAreas.includes(area));
 
   const [propertyTypes, setPropertyTypes] = useState<string[]>(initialData?.propertyType || []);
-  const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(initialAreasNorm);
+  const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(validatedInitialAreas);
   const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
   const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
   const [customerCategories, setCustomerCategories] = useState<string[]>(
@@ -112,7 +112,6 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       ? (initialData?.customerCategory as string[])
       : (initialData?.customerCategory ? [initialData.customerCategory as unknown as string] : [])
   );
-  const [droppedAreas] = useState<string[]>(initialDroppedAreas);
 
   // Load salespeople from Supabase
   const { data: salespeople, isLoading: spLoading } = useQuery({
@@ -489,18 +488,12 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     {droppedAreas.length > 0 && (
                       <p className="text-sm text-muted-foreground">Ignored invalid areas: {droppedAreas.join(', ')}</p>
                     )}
-                    <div className="flex flex-wrap gap-4">
-                      {AREA_OPTIONS.map((area) => (
-                        <div key={area} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`area-${area}`}
-                            checked={areasOfInterestList.includes(area)}
-                            onCheckedChange={(checked) => handleAreaChange(area, checked as boolean)}
-                          />
-                          <Label htmlFor={`area-${area}`}>{area}</Label>
-                        </div>
-                      ))}
-                    </div>
+                    <HierarchicalMultiSelect
+                      tree={areasTree}
+                      selected={areasOfInterestList}
+                      onChange={setAreasOfInterestList}
+                      placeholder="Select areas of interest"
+                    />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="neighborhoodOrAddress">Neighborhood or Address</Label>
