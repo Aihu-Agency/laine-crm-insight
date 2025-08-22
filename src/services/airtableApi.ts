@@ -105,8 +105,6 @@ class AirtableApiService {
           return [str]
         })(),
         'Notes': customerData.notes,
-        'Next Action Date': customerData.nextActionDate,
-        'Next Action Note': customerData.nextActionNote,
         'Customer number': nextCustomerNumber,
       };
 
@@ -234,9 +232,6 @@ class AirtableApiService {
           return [str]
         })(),
         'Notes': customerData.notes,
-        'Next Action Date': customerData.nextActionDate,
-        'Next Action Type': customerData.nextActionType,
-        'Next Action Note': customerData.nextActionNote,
         'Customer number': customerData.customerNumber,
       };
 
@@ -380,6 +375,30 @@ class AirtableApiService {
     } catch (error) {
       console.error('Error deleting customer action:', error)
       throw error
+    }
+  }
+
+  // Get all pending customer actions across all customers
+  async getAllPendingActions(): Promise<CustomerAction[]> {
+    try {
+      let allActions: CustomerAction[] = [];
+      let offset: string | undefined;
+
+      do {
+        const params = new URLSearchParams();
+        if (offset) params.set('offset', offset);
+        
+        const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`);
+        const pageActions = data.records.map(transformAirtableCustomerAction);
+        allActions = [...allActions, ...pageActions];
+        offset = data.offset;
+      } while (offset);
+
+      // Filter to only pending actions
+      return allActions.filter(action => !action.completed);
+    } catch (error) {
+      console.error('Error fetching all pending actions:', error);
+      throw error;
     }
   }
 }

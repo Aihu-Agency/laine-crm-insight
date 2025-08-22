@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { airtableApi } from "@/services/airtableApi";
+import { CustomerAction } from "@/types/airtable";
 
 const ActionRequiredCard = () => {
   const navigate = useNavigate();
@@ -49,55 +50,42 @@ const ActionRequiredCard = () => {
     loadProfile();
   }, []);
 
-  const { data: customers = [], isLoading } = useQuery({
-    queryKey: ['customers', 'actions'],
+  const { data: customers = [], isLoading: customersLoading } = useQuery({
+    queryKey: ['customers'],
     queryFn: () => airtableApi.getCustomers(),
   });
 
-  const filteredSorted = customers
-    .filter(c => !!c.nextActionDate)
-    .filter(c => {
-      const noteRaw = (c.nextActionNote || '').trim();
-      const typeRaw = (c.nextActionType || '').trim();
+  const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
+    queryKey: ['pending-actions'],
+    queryFn: () => airtableApi.getAllPendingActions(),
+  });
 
-      const note = noteRaw.toLowerCase();
-      const type = typeRaw.toLowerCase();
+  const isLoading = customersLoading || actionsLoading;
 
-      // Debug logging to see what we're filtering
-      console.log('Action filtering debug:', {
-        customer: `${c.firstName} ${c.lastName}`,
-        noteRaw,
-        typeRaw,
-        note,
-        type,
-        nextActionDate: c.nextActionDate
-      });
+  // Group pending actions by customer ID and get the earliest action for each customer
+  const customerActionMap = new Map<string, CustomerAction>();
+  
+  pendingActions.forEach(action => {
+    if (action.customerId) {
+      const existing = customerActionMap.get(action.customerId);
+      if (!existing || new Date(action.actionDate) < new Date(existing.actionDate)) {
+        customerActionMap.set(action.customerId, action);
+      }
+    }
+  });
 
-      // Do not exclude if it explicitly says "not done"
-      const mentionsNotDone = /\bnot\s+done\b/.test(note);
-
-      // Exclude if note/type indicate completion or checkmark symbols
-      const completionPatterns = /\b(done|completed?|complete|finished|closed|resolved|cancelled|canceled|archived|ended|accomplished|fulfilled|achieved)\b/;
-      const hasCompletionWord = completionPatterns.test(note) || completionPatterns.test(type);
-      const hasCheckmark = /[✅✔☑✓×❌🗸🗹]/.test(note) || /[✅✔☑✓×❌🗸🗹]/.test(type);
-
-      const shouldExclude = !mentionsNotDone && (hasCompletionWord || hasCheckmark);
-      
-      console.log('Filter decision:', {
-        customer: `${c.firstName} ${c.lastName}`,
-        mentionsNotDone,
-        hasCompletionWord,
-        hasCheckmark,
-        shouldExclude,
-        willShow: !shouldExclude
-      });
-
-      if (shouldExclude) return false;
-      return true;
+  // Create customer data with their earliest pending action
+  const customersWithActions = Array.from(customerActionMap.entries())
+    .map(([customerId, action]) => {
+      const customer = customers.find(c => c.id === customerId);
+      return customer ? { customer, action } : null;
     })
-    .filter(c => {
+    .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
+
+  const filteredSorted = customersWithActions
+    .filter(({ customer }) => {
       if (showEveryone) return true;
-      const sp = normalizeName(c.salesperson);
+      const sp = normalizeName(customer.salesperson);
       const hasName = !!userFullName || !!userFirstName;
       if (!hasName) return true;
       const full = normalizeName(userFullName);
@@ -105,8 +93,8 @@ const ActionRequiredCard = () => {
       return sp === full || sp === first;
     })
     .sort((a, b) => {
-      const da = new Date(a.nextActionDate!);
-      const db = new Date(b.nextActionDate!);
+      const da = new Date(a.action.actionDate);
+      const db = new Date(b.action.actionDate);
       return da.getTime() - db.getTime();
     });
 
@@ -142,16 +130,16 @@ const ActionRequiredCard = () => {
           <div className="text-sm text-muted-foreground">No upcoming actions</div>
         ) : (
           <div className="space-y-3">
-            {visible.map((c) => (
+            {visible.map(({ customer, action }) => (
               <div
-                key={c.id}
+                key={customer.id}
                 className="flex justify-between items-center py-3 px-4 rounded-lg transition-colors cursor-pointer hover:bg-accent"
-                onClick={() => handleCustomerClick(c.id)}
+                onClick={() => handleCustomerClick(customer.id)}
               >
-                <span className="font-medium">{`${c.firstName} ${c.lastName}`.trim()}</span>
+                <span className="font-medium">{`${customer.firstName} ${customer.lastName}`.trim()}</span>
                 <span className="text-sm text-muted-foreground">
-                  {c.nextActionNote ? `${c.nextActionNote} • ` : ""}
-                  {c.nextActionDate ? new Date(c.nextActionDate).toLocaleDateString() : ""}
+                  {action.actionDescription ? `${action.actionDescription} • ` : ""}
+                  {action.actionDate ? new Date(action.actionDate).toLocaleDateString() : ""}
                 </span>
               </div>
             ))}

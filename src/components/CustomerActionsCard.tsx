@@ -33,6 +33,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
       airtableApi.createCustomerAction(customerId, actionData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-actions', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-actions'] });
       toast({
         title: "Success",
         description: "Customer action created successfully",
@@ -55,6 +56,7 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
     mutationFn: (actionId: string) => airtableApi.markActionAsCompleted(actionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-actions', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-actions'] });
       toast({
         title: "Success",
         description: "Action marked as completed",

@@ -91,6 +91,7 @@ export interface CustomerAction {
   id: string
   customerActionNumber?: number
   customerNumber?: string[]
+  customerId?: string
   actionDescription: string
   completed: boolean
   actionDate: string
@@ -102,6 +103,7 @@ export const transformAirtableCustomerAction = (record: AirtableCustomerAction):
   id: record.id,
   customerActionNumber: record.fields['Customer Action'],
   customerNumber: record.fields['Customer number'],
+  customerId: record.fields['Customer']?.[0] || record.fields['Customers']?.[0],
   actionDescription: record.fields['Action Description'] || '',
   completed: record.fields['Completed'] === 'Done',
   actionDate: record.fields['Action Date'] || '',
