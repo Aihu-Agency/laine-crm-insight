@@ -70,7 +70,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         initialData={{
           firstName: formData.firstName || "John",
           lastName: formData.lastName || "Doe",
-          areasOfInterest: formData.areaOfInterest || "Downtown"
+          areasOfInterest: formData.areaOfInterest || ""
         }}
       />
     );
