@@ -1,6 +1,6 @@
 import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer, CustomerAction, AirtableCustomerActionResponse, AirtableCustomerAction, transformAirtableCustomerAction } from '@/types/airtable'
 import { supabase } from '@/integrations/supabase/client'
-import { AREA_OPTIONS, normalizeArea } from '@/constants/areas'
+import { normalizeAndValidateAreas } from '@/constants/areas-tree'
 
 class AirtableApiService {
   private async makeRequest(endpoint: string, options: { method?: string; body?: any } = {}) {
@@ -59,13 +59,12 @@ class AirtableApiService {
         // nextCustomerNumber remains 1001
       }
 
-      // Normalize Areas of interest
+      // Normalize Areas of interest using the hierarchical tree
       const rawAreas = customerData.areasOfInterest
         ? customerData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const mapped = rawAreas.map((a) => ({ raw: a, norm: normalizeArea(a) }));
-      const sanitizedAreas = Array.from(new Set(mapped.map((m) => m.norm).filter(Boolean) as string[]));
-      const invalidAreas = mapped.filter((m) => !m.norm).map((m) => m.raw);
+      const sanitizedAreas = normalizeAndValidateAreas(rawAreas);
+      const invalidAreas = rawAreas.filter(area => !sanitizedAreas.includes(area));
       console.debug('Areas normalization (create):', { rawAreas, sanitizedAreas, invalidAreas });
 
       const airtableFieldsBase: Record<string, any> = {
@@ -189,13 +188,12 @@ class AirtableApiService {
 
   async updateCustomer(id: string, customerData: Partial<Customer>): Promise<Customer & { _warnings?: string[] }> {
     try {
-      // Normalize Areas of interest
+      // Normalize Areas of interest using the hierarchical tree
       const rawAreas = customerData.areasOfInterest
         ? customerData.areasOfInterest.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const mapped = rawAreas.map((a) => ({ raw: a, norm: normalizeArea(a) }));
-      const sanitizedAreas = Array.from(new Set(mapped.map((m) => m.norm).filter(Boolean) as string[]));
-      const invalidAreas = mapped.filter((m) => !m.norm).map((m) => m.raw);
+      const sanitizedAreas = normalizeAndValidateAreas(rawAreas);
+      const invalidAreas = rawAreas.filter(area => !sanitizedAreas.includes(area));
       console.debug('Areas normalization (update):', { rawAreas, sanitizedAreas, invalidAreas });
 
       const airtableFieldsBase: Record<string, any> = {
