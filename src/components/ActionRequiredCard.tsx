@@ -63,6 +63,16 @@ const ActionRequiredCard = () => {
       const note = noteRaw.toLowerCase();
       const type = typeRaw.toLowerCase();
 
+      // Debug logging to see what we're filtering
+      console.log('Action filtering debug:', {
+        customer: `${c.firstName} ${c.lastName}`,
+        noteRaw,
+        typeRaw,
+        note,
+        type,
+        nextActionDate: c.nextActionDate
+      });
+
       // Do not exclude if it explicitly says "not done"
       const mentionsNotDone = /\bnot\s+done\b/.test(note);
 
@@ -71,7 +81,18 @@ const ActionRequiredCard = () => {
       const hasCompletionWord = completionPatterns.test(note) || completionPatterns.test(type);
       const hasCheckmark = /[✅✔☑✓×❌🗸🗹]/.test(note) || /[✅✔☑✓×❌🗸🗹]/.test(type);
 
-      if (!mentionsNotDone && (hasCompletionWord || hasCheckmark)) return false;
+      const shouldExclude = !mentionsNotDone && (hasCompletionWord || hasCheckmark);
+      
+      console.log('Filter decision:', {
+        customer: `${c.firstName} ${c.lastName}`,
+        mentionsNotDone,
+        hasCompletionWord,
+        hasCheckmark,
+        shouldExclude,
+        willShow: !shouldExclude
+      });
+
+      if (shouldExclude) return false;
       return true;
     })
     .filter(c => {
