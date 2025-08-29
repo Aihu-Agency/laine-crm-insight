@@ -113,6 +113,12 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       : (initialData?.customerCategory ? [initialData.customerCategory as unknown as string] : [])
   );
 
+  // New multi-select states for property features
+  const [viewsSelected, setViewsSelected] = useState<string[]>(initialData?.views || []);
+  const [orientationSelected, setOrientationSelected] = useState<string[]>(initialData?.orientation || []);
+  const [otherFeaturesSelected, setOtherFeaturesSelected] = useState<string[]>(initialData?.otherFeatures || []);
+  const [conditionSelected, setConditionSelected] = useState<string[]>(initialData?.condition || []);
+
   // Load salespeople from Supabase
   const { data: salespeople, isLoading: spLoading } = useQuery({
     queryKey: ['salespeople'],
@@ -244,8 +250,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       minPrice: formData.minPrice,
       maxPrice: formData.maxPrice,
       areasOfInterest: areasOfInterestList.join(', '),
-      mustHave: formData.mustHave,
-      niceToHave: formData.niceToHave,
+      views: viewsSelected,
+      orientation: orientationSelected,
+      otherFeatures: otherFeaturesSelected,
+      condition: conditionSelected,
       neighborhoodOrAddress: formData.neighborhoodOrAddress,
       salesperson: formData.salesperson,
       sourceOfContact: selectedSourceOfContact,
@@ -559,26 +567,138 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                     </div>
                   </div>
 
+                  {/* Property Feature Multi-selects */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Views */}
                     <div className="space-y-2">
-                      <Label htmlFor="mustHave">Must Have</Label>
-                      <Textarea 
-                        id="mustHave" 
-                        value={formData.mustHave}
-                        onChange={(e) => setFormData({...formData, mustHave: e.target.value})}
-                        placeholder="Required features (e.g., balcony, parking, elevator)"
-                        rows={3}
-                      />
+                      <Label>Views</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                            {viewsSelected.length ? `${viewsSelected.length} selected` : 'Select views'}
+                            <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                          <div className="space-y-1">
+                            {['Garden', 'Golf', 'Mountain', 'Swimming pool', 'Sea', 'Street'].map((view) => (
+                              <div key={view} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  id={`view-${view}`}
+                                  checked={viewsSelected.includes(view)}
+                                  onCheckedChange={(checked) => {
+                                    const isChecked = Boolean(checked);
+                                    setViewsSelected(isChecked
+                                      ? [...viewsSelected, view]
+                                      : viewsSelected.filter((v) => v !== view)
+                                    );
+                                  }}
+                                />
+                                <Label htmlFor={`view-${view}`}>{view}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
+
+                    {/* Orientation */}
                     <div className="space-y-2">
-                      <Label htmlFor="niceToHave">Nice to Have</Label>
-                      <Textarea 
-                        id="niceToHave" 
-                        value={formData.niceToHave}
-                        onChange={(e) => setFormData({...formData, niceToHave: e.target.value})}
-                        placeholder="Desired features (e.g., sauna, garden, sea view)"
-                        rows={3}
-                      />
+                      <Label>Orientation</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                            {orientationSelected.length ? `${orientationSelected.length} selected` : 'Select orientation'}
+                            <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                          <div className="space-y-1">
+                            {['North', 'East', 'South', 'West', 'Northeast', 'Southeast', 'Southwest', 'Northwest'].map((orientation) => (
+                              <div key={orientation} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  id={`orientation-${orientation}`}
+                                  checked={orientationSelected.includes(orientation)}
+                                  onCheckedChange={(checked) => {
+                                    const isChecked = Boolean(checked);
+                                    setOrientationSelected(isChecked
+                                      ? [...orientationSelected, orientation]
+                                      : orientationSelected.filter((o) => o !== orientation)
+                                    );
+                                  }}
+                                />
+                                <Label htmlFor={`orientation-${orientation}`}>{orientation}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Other Features */}
+                    <div className="space-y-2">
+                      <Label>Other Features</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                            {otherFeaturesSelected.length ? `${otherFeaturesSelected.length} selected` : 'Select features'}
+                            <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                          <div className="space-y-1">
+                            {['Balcony', 'Garden', 'Elevator', 'Private yard', 'Parking', 'Swimming pool', 'Sauna', 'Terrace'].map((feature) => (
+                              <div key={feature} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  id={`feature-${feature}`}
+                                  checked={otherFeaturesSelected.includes(feature)}
+                                  onCheckedChange={(checked) => {
+                                    const isChecked = Boolean(checked);
+                                    setOtherFeaturesSelected(isChecked
+                                      ? [...otherFeaturesSelected, feature]
+                                      : otherFeaturesSelected.filter((f) => f !== feature)
+                                    );
+                                  }}
+                                />
+                                <Label htmlFor={`feature-${feature}`}>{feature}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Condition */}
+                    <div className="space-y-2">
+                      <Label>Condition</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                            {conditionSelected.length ? `${conditionSelected.length} selected` : 'Select condition'}
+                            <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50">
+                          <div className="space-y-1">
+                            {['Excellent', 'Good', 'Nearly new', 'Recently renovated', 'Needs renovation'].map((condition) => (
+                              <div key={condition} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                                <Checkbox
+                                  id={`condition-${condition}`}
+                                  checked={conditionSelected.includes(condition)}
+                                  onCheckedChange={(checked) => {
+                                    const isChecked = Boolean(checked);
+                                    setConditionSelected(isChecked
+                                      ? [...conditionSelected, condition]
+                                      : conditionSelected.filter((c) => c !== condition)
+                                    );
+                                  }}
+                                />
+                                <Label htmlFor={`condition-${condition}`}>{condition}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>

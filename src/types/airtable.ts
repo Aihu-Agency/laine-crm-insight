@@ -14,6 +14,10 @@ export interface AirtableCustomer {
     'Areas of interest'?: string[]
     'Must have'?: string
     'Nice to have'?: string
+    'Views'?: string[]
+    'Orientation'?: string[]
+    'Other features'?: string[]
+    'Condition'?: string[]
     'Neighborhood or address'?: string
     'Sales person'?: string
     'Source of contact'?: string[]
@@ -50,6 +54,10 @@ export interface Customer {
   areasOfInterest?: string
   mustHave?: string
   niceToHave?: string
+  views?: string[]
+  orientation?: string[]
+  otherFeatures?: string[]
+  condition?: string[]
   neighborhoodOrAddress?: string
   salesperson?: string
   sourceOfContact?: string | string[]
@@ -130,6 +138,10 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   areasOfInterest: record.fields['Areas of interest']?.join(', '),
   mustHave: record.fields['Must have'],
   niceToHave: record.fields['Nice to have'],
+  views: record.fields['Views'] || [],
+  orientation: record.fields['Orientation'] || [],
+  otherFeatures: record.fields['Other features'] || [],
+  condition: record.fields['Condition'] || [],
   neighborhoodOrAddress: record.fields['Neighborhood or address'],
   salesperson: record.fields['Sales person'],
   sourceOfContact: Array.isArray(record.fields['Source of contact']) 

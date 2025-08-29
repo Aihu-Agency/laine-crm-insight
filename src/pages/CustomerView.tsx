@@ -293,13 +293,61 @@ const CustomerView = () => {
                     <p className="text-sm text-gray-500">Bathrooms</p>
                     <p className="font-medium">{customerData.bathrooms || '-'}</p>
                   </div>
-                  <div className="lg:col-span-3">
-                    <p className="text-sm text-gray-500">Must have</p>
-                    <p className="font-medium">{customerData.mustHave || '-'}</p>
+                  <div>
+                    <p className="text-sm text-gray-500">Views</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {customerData.views && customerData.views.length > 0 ? (
+                        customerData.views.map((view, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {view}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="lg:col-span-3">
-                    <p className="text-sm text-gray-500">Nice to have</p>
-                    <p className="font-medium">{customerData.niceToHave || '-'}</p>
+                  <div>
+                    <p className="text-sm text-gray-500">Orientation</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {customerData.orientation && customerData.orientation.length > 0 ? (
+                        customerData.orientation.map((orientation, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {orientation}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Other features</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {customerData.otherFeatures && customerData.otherFeatures.length > 0 ? (
+                        customerData.otherFeatures.map((feature, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Condition</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {customerData.condition && customerData.condition.length > 0 ? (
+                        customerData.condition.map((condition, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {condition}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
                     <p className="text-sm text-gray-500">Neighborhood or address</p>
