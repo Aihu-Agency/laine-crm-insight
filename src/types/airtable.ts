@@ -45,6 +45,7 @@ export interface AirtableProperty {
     'Area m²'?: string
     'Summary'?: string
     'property_detail_url'?: string
+    'ID'?: string
   }
   createdTime: string
 }
@@ -106,6 +107,7 @@ export interface Property {
   area?: string
   summary?: string
   propertyDetailUrl?: string
+  propertyIdUrl?: string
   createdTime: string
 }
 
@@ -206,5 +208,6 @@ export const transformAirtableProperty = (record: AirtableProperty): Property =>
   area: record.fields['Area m²'],
   summary: record.fields['Summary'],
   propertyDetailUrl: record.fields['property_detail_url'],
+  propertyIdUrl: record.fields['ID'],
   createdTime: record.createdTime
 })
