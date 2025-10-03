@@ -29,8 +29,30 @@ export interface AirtableCustomer {
     'Next Action Type'?: string
     'Next Action Note'?: string
     'Customer number'?: number
+    'Properties'?: string[]
   }
   createdTime: string
+}
+
+export interface AirtableProperty {
+  id: string
+  fields: {
+    'Property Type'?: string
+    'Bedrooms'?: number
+    'Bathrooms'?: number
+    'Price'?: number
+    'Location'?: string
+    'Summary'?: string
+    'Address'?: string
+    'Area'?: string
+    'Image URL'?: string
+  }
+  createdTime: string
+}
+
+export interface AirtablePropertiesResponse {
+  records: AirtableProperty[]
+  offset?: string
 }
 
 export interface AirtableResponse {
@@ -71,6 +93,21 @@ export interface Customer {
   nextActionNote?: string
   tags?: string[]
   customerNumber?: number
+  propertyIds?: string[]
+  createdTime: string
+}
+
+export interface Property {
+  id: string
+  propertyType?: string
+  bedrooms?: number
+  bathrooms?: number
+  price?: number
+  location?: string
+  summary?: string
+  address?: string
+  area?: string
+  imageUrl?: string
   createdTime: string
 }
 
@@ -157,5 +194,20 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   nextActionNote: record.fields['Next Action Note'],
   tags: [], // Field doesn't exist in Airtable
   customerNumber: record.fields['Customer number'],
+  propertyIds: record.fields['Properties'] || [],
+  createdTime: record.createdTime
+})
+
+export const transformAirtableProperty = (record: AirtableProperty): Property => ({
+  id: record.id,
+  propertyType: record.fields['Property Type'],
+  bedrooms: record.fields['Bedrooms'],
+  bathrooms: record.fields['Bathrooms'],
+  price: record.fields['Price'],
+  location: record.fields['Location'] || record.fields['Area'],
+  summary: record.fields['Summary'],
+  address: record.fields['Address'],
+  area: record.fields['Area'],
+  imageUrl: record.fields['Image URL'],
   createdTime: record.createdTime
 })

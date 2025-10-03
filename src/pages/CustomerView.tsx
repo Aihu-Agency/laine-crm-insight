@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
-import { Customer } from "@/types/airtable";
+import { Customer, Property } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { CustomerActionsCard } from "@/components/CustomerActionsCard";
@@ -26,6 +26,12 @@ const CustomerView = () => {
     queryKey: ['customer', id],
     queryFn: () => airtableApi.getCustomer(id!),
     enabled: !!id,
+  });
+
+  const { data: properties, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['properties', customerData?.propertyIds],
+    queryFn: () => airtableApi.getProperties(customerData?.propertyIds || []),
+    enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
   });
 
   const updateCustomerMutation = useMutation({
@@ -111,29 +117,6 @@ const CustomerView = () => {
   const handleBackClick = () => {
     navigate("/customers");
   };
-
-
-  // Mock suggested properties data
-  const suggestedProperties = [
-    {
-      id: 1,
-      propertyType: "Apartment",
-      bedrooms: 3,
-      bathrooms: 2,
-      price: 350000,
-      location: "Puerto Banús, Marbella",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      propertyType: "Villa",
-      bedrooms: 2,
-      bathrooms: 2,
-      price: 395000,
-      location: "Marbella Golden Mile",
-      image: "/placeholder.svg"
-    }
-  ];
   
   const getTimeOfPurchaseBadge = (v?: string) => {
     if (!v) return <Badge variant="outline" className="text-xs">-</Badge>;
@@ -407,38 +390,60 @@ const CustomerView = () => {
 
             {/* Suggested Properties */}
             <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">Suggested properties <span className="text-xs text-gray-500">(Work in progress)</span></CardTitle>
-                </CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  Suggested properties
+                  {customerData.propertyIds && customerData.propertyIds.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {customerData.propertyIds.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {suggestedProperties.map((property) => (
-                    <div key={property.id} className="p-3 border rounded-lg hover:bg-gray-50">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{property.propertyType}</p>
-                          <p className="text-sm text-gray-600">{property.location}</p>
+                {isLoadingProperties ? (
+                  <div className="text-sm text-muted-foreground">Loading properties...</div>
+                ) : !properties || properties.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No properties matched yet</div>
+                ) : (
+                  <div className="space-y-3">
+                    {properties.map((property) => (
+                      <div key={property.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium">{property.propertyType || 'Property'}</p>
+                            <p className="text-sm text-muted-foreground">{property.location}</p>
+                          </div>
+                          {property.price && (
+                            <p className="font-semibold text-green-600">
+                              €{property.price.toLocaleString()}
+                            </p>
+                          )}
                         </div>
-                        <p className="font-semibold text-green-600">€{property.price.toLocaleString()}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                          {property.bedrooms && <span>{property.bedrooms} bed</span>}
+                          {property.bathrooms && <span>{property.bathrooms} bath</span>}
+                        </div>
+                        {property.summary && (
+                          <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-sm">
+                            <p className="font-medium text-xs text-blue-600 dark:text-blue-400 mb-1">AI Analysis</p>
+                            <p className="text-muted-foreground line-clamp-3">{property.summary}</p>
+                          </div>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => {
+                            window.open(`https://airtable.com/${property.id}`, '_blank')
+                          }}
+                        >
+                          View Property
+                        </Button>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <span>{property.bedrooms} bed</span>
-                        <span>{property.bathrooms} bath</span>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full"
-                        onClick={() => {
-                          // In a real app, this would navigate to property details
-                          console.log("Navigate to property", property.id);
-                        }}
-                      >
-                        View Property
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

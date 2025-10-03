@@ -123,7 +123,28 @@ serve(async (req) => {
     let airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers`
     
     // Handle different endpoints
-    if (path.startsWith('/customer-actions')) {
+    if (path.startsWith('/properties')) {
+      // Handle properties endpoints
+      airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Properties`
+      
+      if (actualMethod === 'GET') {
+        const propertyId = path.split('/')[2]
+        let queryString = ''
+
+        if (actualEndpoint && actualEndpoint.includes('?')) {
+          queryString = actualEndpoint.split('?')[1]
+        } else {
+          const urlObj = new URL(req.url)
+          queryString = urlObj.searchParams.toString()
+        }
+
+        if (propertyId) {
+          airtableUrl += `/${propertyId}`
+        } else if (queryString) {
+          airtableUrl += `?${queryString}`
+        }
+      }
+    } else if (path.startsWith('/customer-actions')) {
       // Handle customer actions endpoints
       airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customer%20Actions`
       

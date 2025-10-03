@@ -1,4 +1,4 @@
-import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer, CustomerAction, AirtableCustomerActionResponse, AirtableCustomerAction, transformAirtableCustomerAction } from '@/types/airtable'
+import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer, CustomerAction, AirtableCustomerActionResponse, AirtableCustomerAction, transformAirtableCustomerAction, Property, AirtablePropertiesResponse, AirtableProperty, transformAirtableProperty } from '@/types/airtable'
 import { supabase } from '@/integrations/supabase/client'
 import { normalizeAndValidateAreas } from '@/constants/areas-tree'
 
@@ -403,6 +403,34 @@ class AirtableApiService {
     } catch (error) {
       console.error('Error fetching all pending actions:', error);
       throw error;
+    }
+  }
+
+  // Property methods
+  async getProperties(propertyIds: string[]): Promise<Property[]> {
+    try {
+      if (!propertyIds || propertyIds.length === 0) {
+        return []
+      }
+      
+      // Fetch properties by IDs using Airtable's filterByFormula
+      const formula = `OR(${propertyIds.map(id => `RECORD_ID()='${id}'`).join(',')})`
+      
+      const data: AirtablePropertiesResponse = await this.makeRequest(`/properties?filterByFormula=${encodeURIComponent(formula)}`)
+      return data.records.map(transformAirtableProperty)
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+      return []
+    }
+  }
+
+  async getProperty(id: string): Promise<Property | null> {
+    try {
+      const record: AirtableProperty = await this.makeRequest(`/properties/${id}`)
+      return transformAirtableProperty(record)
+    } catch (error) {
+      console.error('Error fetching property:', error)
+      return null
     }
   }
 }
