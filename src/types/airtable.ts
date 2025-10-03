@@ -41,8 +41,8 @@ export interface AirtableProperty {
     'Property Type'?: string
     'Bedrooms'?: number
     'Bathrooms'?: number
-    'Price'?: number
-    'Area'?: string
+    'Price €'?: number
+    'Area m²'?: string
     'Summary'?: string
     'property_detail_url'?: string
   }
@@ -202,8 +202,8 @@ export const transformAirtableProperty = (record: AirtableProperty): Property =>
   propertyType: record.fields['Property Type'],
   bedrooms: record.fields['Bedrooms'],
   bathrooms: record.fields['Bathrooms'],
-  price: record.fields['Price'],
-  area: record.fields['Area'],
+  price: record.fields['Price €'],
+  area: record.fields['Area m²'],
   summary: record.fields['Summary'],
   propertyDetailUrl: record.fields['property_detail_url'],
   createdTime: record.createdTime

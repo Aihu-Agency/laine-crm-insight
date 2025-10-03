@@ -447,7 +447,7 @@ const CustomerView = () => {
                         {/* Summary */}
                         {property.summary && (
                           <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
-                            <p className="font-semibold text-xs text-blue-700 dark:text-blue-400 mb-1">AI Summary</p>
+                            <p className="font-semibold text-xs text-blue-700 dark:text-blue-400 mb-1">AI Image Summary</p>
                             <p className="text-foreground">{property.summary}</p>
                           </div>
                         )}
