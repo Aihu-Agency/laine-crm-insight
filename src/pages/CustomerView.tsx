@@ -33,12 +33,6 @@ const CustomerView = () => {
     queryFn: () => airtableApi.getProperties(customerData?.propertyIds || []),
     enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
   });
-
-  // Limit to 2 properties for Mikko Tuominen (Customer number 1002)
-  const displayProperties = customerData?.customerNumber === 1002 
-    ? properties?.slice(0, 2) 
-    : properties;
-
   const updateCustomerMutation = useMutation({
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
       airtableApi.updateCustomer(customerId, data),
