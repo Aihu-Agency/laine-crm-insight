@@ -432,7 +432,7 @@ const CustomerView = () => {
                         <div className="grid grid-cols-3 gap-2 mb-2 text-xs">
                           <div>
                             <span className="text-muted-foreground">Area:</span>
-                            <span className="ml-1 font-medium">{property.area || '-'}</span>
+                            <span className="ml-1 font-medium">{property.area || '-'}m²</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Bedrooms:</span>
