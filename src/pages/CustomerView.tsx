@@ -414,39 +414,37 @@ const CustomerView = () => {
                   <div className="space-y-3">
                     {displayProperties.map((property) => (
                       <div key={property.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-semibold text-lg">{property.title || 'Property'}</h4>
-                            <p className="text-sm text-muted-foreground">{property.propertyType}</p>
-                          </div>
-                          {property.price && (
-                            <p className="font-bold text-green-600 text-lg">
-                              €{property.price.toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
-                          {property.area && (
-                            <div>
-                              <span className="text-muted-foreground">Area:</span>
-                              <span className="ml-1 font-medium">{property.area}</span>
-                            </div>
-                          )}
-                          {property.bedrooms && (
-                            <div>
-                              <span className="text-muted-foreground">Bedrooms:</span>
-                              <span className="ml-1 font-medium">{property.bedrooms}</span>
-                            </div>
-                          )}
-                          {property.bathrooms && (
-                            <div>
-                              <span className="text-muted-foreground">Bathrooms:</span>
-                              <span className="ml-1 font-medium">{property.bathrooms}</span>
-                            </div>
-                          )}
+                        {/* Title and Property Type */}
+                        <div className="mb-3">
+                          <h4 className="font-semibold text-lg">{property.title || 'Untitled Property'}</h4>
+                          <p className="text-sm text-muted-foreground">{property.propertyType || 'Type not specified'}</p>
                         </div>
 
+                        {/* Price */}
+                        <div className="mb-3">
+                          <span className="text-sm text-muted-foreground">Price: </span>
+                          <span className="font-bold text-green-600 text-lg">
+                            {property.price ? `€${property.price.toLocaleString()}` : 'Price not set'}
+                          </span>
+                        </div>
+                        
+                        {/* Area, Bedrooms, Bathrooms */}
+                        <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Area:</span>
+                            <span className="ml-1 font-medium">{property.area || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Bedrooms:</span>
+                            <span className="ml-1 font-medium">{property.bedrooms || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Bathrooms:</span>
+                            <span className="ml-1 font-medium">{property.bathrooms || '-'}</span>
+                          </div>
+                        </div>
+
+                        {/* Summary */}
                         {property.summary && (
                           <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
                             <p className="font-semibold text-xs text-blue-700 dark:text-blue-400 mb-1">AI Summary</p>
@@ -454,6 +452,7 @@ const CustomerView = () => {
                           </div>
                         )}
                         
+                        {/* View Details Button */}
                         {property.propertyDetailUrl && (
                           <Button 
                             variant="outline" 
