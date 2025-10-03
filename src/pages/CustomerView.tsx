@@ -453,16 +453,14 @@ const CustomerView = () => {
                         )}
                         
                         {/* View Details Button */}
-                        {property.propertyDetailUrl && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full text-xs h-8"
-                            onClick={() => window.open(property.propertyDetailUrl, '_blank')}
-                          >
-                            View Full Details
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full text-xs h-8"
+                          onClick={() => window.open(`https://airtable.com/appxbBIY4Og51BwE1/tblWJQl1RQVhXLqWG/${property.id}`, '_blank')}
+                        >
+                          View Full Details
+                        </Button>
                       </div>
                     ))}
                   </div>
