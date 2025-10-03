@@ -424,7 +424,7 @@ const CustomerView = () => {
                         <div className="mb-2">
                           <span className="text-xs text-muted-foreground">Price: </span>
                           <span className="font-bold text-green-600">
-                            {property.price ? `€${property.price.toLocaleString()}` : 'Price not set'}
+                            {property.price ? `${property.price.toLocaleString()} €` : 'Price not set'}
                           </span>
                         </div>
                         
