@@ -411,25 +411,25 @@ const CustomerView = () => {
                 ) : !displayProperties || displayProperties.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No properties matched yet</div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {displayProperties.map((property) => (
-                      <div key={property.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div key={property.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                         {/* Title and Property Type */}
-                        <div className="mb-3">
-                          <h4 className="font-semibold text-lg">{property.title || 'Untitled Property'}</h4>
-                          <p className="text-sm text-muted-foreground">{property.propertyType || 'Type not specified'}</p>
+                        <div className="mb-2">
+                          <h4 className="font-semibold text-base">{property.title || 'Untitled Property'}</h4>
+                          <p className="text-xs text-muted-foreground">{property.propertyType || 'Type not specified'}</p>
                         </div>
 
                         {/* Price */}
-                        <div className="mb-3">
-                          <span className="text-sm text-muted-foreground">Price: </span>
-                          <span className="font-bold text-green-600 text-lg">
+                        <div className="mb-2">
+                          <span className="text-xs text-muted-foreground">Price: </span>
+                          <span className="font-bold text-green-600">
                             {property.price ? `€${property.price.toLocaleString()}` : 'Price not set'}
                           </span>
                         </div>
                         
                         {/* Area, Bedrooms, Bathrooms */}
-                        <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
+                        <div className="grid grid-cols-3 gap-2 mb-2 text-xs">
                           <div>
                             <span className="text-muted-foreground">Area:</span>
                             <span className="ml-1 font-medium">{property.area || '-'}</span>
@@ -446,8 +446,8 @@ const CustomerView = () => {
 
                         {/* Summary */}
                         {property.summary && (
-                          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
-                            <p className="font-semibold text-xs text-blue-700 dark:text-blue-400 mb-1">AI Image Summary</p>
+                          <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs">
+                            <p className="font-semibold text-blue-700 dark:text-blue-400 mb-1">AI Image Summary</p>
                             <p className="text-foreground">{property.summary}</p>
                           </div>
                         )}
@@ -457,7 +457,7 @@ const CustomerView = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="w-full"
+                            className="w-full text-xs h-8"
                             onClick={() => window.open(property.propertyDetailUrl, '_blank')}
                           >
                             View Full Details
