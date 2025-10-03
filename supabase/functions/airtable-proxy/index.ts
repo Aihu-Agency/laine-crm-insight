@@ -348,7 +348,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-
+    }
     
     // Forward the request to Airtable
     console.log('[Airtable Proxy] Forwarding request to:', airtableUrl)
