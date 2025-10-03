@@ -37,15 +37,14 @@ export interface AirtableCustomer {
 export interface AirtableProperty {
   id: string
   fields: {
+    'Title'?: string
     'Property Type'?: string
     'Bedrooms'?: number
     'Bathrooms'?: number
     'Price'?: number
-    'Location'?: string
-    'Summary'?: string
-    'Address'?: string
     'Area'?: string
-    'Image URL'?: string
+    'Summary'?: string
+    'property_detail_url'?: string
   }
   createdTime: string
 }
@@ -99,15 +98,14 @@ export interface Customer {
 
 export interface Property {
   id: string
+  title?: string
   propertyType?: string
   bedrooms?: number
   bathrooms?: number
   price?: number
-  location?: string
-  summary?: string
-  address?: string
   area?: string
-  imageUrl?: string
+  summary?: string
+  propertyDetailUrl?: string
   createdTime: string
 }
 
@@ -200,14 +198,13 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
 
 export const transformAirtableProperty = (record: AirtableProperty): Property => ({
   id: record.id,
+  title: record.fields['Title'],
   propertyType: record.fields['Property Type'],
   bedrooms: record.fields['Bedrooms'],
   bathrooms: record.fields['Bathrooms'],
   price: record.fields['Price'],
-  location: record.fields['Location'] || record.fields['Area'],
-  summary: record.fields['Summary'],
-  address: record.fields['Address'],
   area: record.fields['Area'],
-  imageUrl: record.fields['Image URL'],
+  summary: record.fields['Summary'],
+  propertyDetailUrl: record.fields['property_detail_url'],
   createdTime: record.createdTime
 })

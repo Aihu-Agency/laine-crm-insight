@@ -34,6 +34,11 @@ const CustomerView = () => {
     enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
   });
 
+  // Limit to 2 properties for Mikko Tuominen (Customer number 1002)
+  const displayProperties = customerData?.customerNumber === 1002 
+    ? properties?.slice(0, 2) 
+    : properties;
+
   const updateCustomerMutation = useMutation({
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
       airtableApi.updateCustomer(customerId, data),
@@ -403,43 +408,62 @@ const CustomerView = () => {
               <CardContent>
                 {isLoadingProperties ? (
                   <div className="text-sm text-muted-foreground">Loading properties...</div>
-                ) : !properties || properties.length === 0 ? (
+                ) : !displayProperties || displayProperties.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No properties matched yet</div>
                 ) : (
                   <div className="space-y-3">
-                    {properties.map((property) => (
-                      <div key={property.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
+                    {displayProperties.map((property) => (
+                      <div key={property.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex justify-between items-start mb-3">
                           <div>
-                            <p className="font-medium">{property.propertyType || 'Property'}</p>
-                            <p className="text-sm text-muted-foreground">{property.location}</p>
+                            <h4 className="font-semibold text-lg">{property.title || 'Property'}</h4>
+                            <p className="text-sm text-muted-foreground">{property.propertyType}</p>
                           </div>
                           {property.price && (
-                            <p className="font-semibold text-green-600">
+                            <p className="font-bold text-green-600 text-lg">
                               €{property.price.toLocaleString()}
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                          {property.bedrooms && <span>{property.bedrooms} bed</span>}
-                          {property.bathrooms && <span>{property.bathrooms} bath</span>}
+                        
+                        <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
+                          {property.area && (
+                            <div>
+                              <span className="text-muted-foreground">Area:</span>
+                              <span className="ml-1 font-medium">{property.area}</span>
+                            </div>
+                          )}
+                          {property.bedrooms && (
+                            <div>
+                              <span className="text-muted-foreground">Bedrooms:</span>
+                              <span className="ml-1 font-medium">{property.bedrooms}</span>
+                            </div>
+                          )}
+                          {property.bathrooms && (
+                            <div>
+                              <span className="text-muted-foreground">Bathrooms:</span>
+                              <span className="ml-1 font-medium">{property.bathrooms}</span>
+                            </div>
+                          )}
                         </div>
+
                         {property.summary && (
-                          <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded text-sm">
-                            <p className="font-medium text-xs text-blue-600 dark:text-blue-400 mb-1">AI Analysis</p>
-                            <p className="text-muted-foreground line-clamp-3">{property.summary}</p>
+                          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
+                            <p className="font-semibold text-xs text-blue-700 dark:text-blue-400 mb-1">AI Summary</p>
+                            <p className="text-foreground">{property.summary}</p>
                           </div>
                         )}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => {
-                            window.open(`https://airtable.com/${property.id}`, '_blank')
-                          }}
-                        >
-                          View Property
-                        </Button>
+                        
+                        {property.propertyDetailUrl && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => window.open(property.propertyDetailUrl, '_blank')}
+                          >
+                            View Full Details
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
