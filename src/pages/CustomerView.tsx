@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
@@ -13,6 +14,7 @@ import { Customer, Property } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { CustomerActionsCard } from "@/components/CustomerActionsCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const CustomerView = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +34,15 @@ const CustomerView = () => {
     queryKey: ['properties', customerData?.propertyIds],
     queryFn: () => airtableApi.getProperties(customerData?.propertyIds || []),
     enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
+  });
+
+  const { data: salespeople } = useQuery({
+    queryKey: ['salespeople'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_salespeople');
+      if (error) throw error;
+      return data;
+    },
   });
 
   // Limit to 2 properties for customer number 1002 (Mikko Tuominen), show all for others
@@ -54,6 +65,25 @@ const CustomerView = () => {
       toast({
         title: "Error",
         description: "Failed to update customer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSalespersonMutation = useMutation({
+    mutationFn: (newSalesperson: string) =>
+      airtableApi.updateCustomer(id!, { salesperson: newSalesperson }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      toast({
+        title: "Success",
+        description: "Salesperson updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update salesperson",
         variant: "destructive",
       });
     },
@@ -229,8 +259,28 @@ const CustomerView = () => {
                     <p className="font-medium">{customerData.sourceOfContact || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Salesperson</p>
-                    <p className="font-medium">{customerData.salesperson ? `👤 ${customerData.salesperson}` : '-'}</p>
+                    <p className="text-sm text-gray-500 mb-1">Salesperson</p>
+                    <Select
+                      value={customerData.salesperson || ""}
+                      onValueChange={(value) => updateSalespersonMutation.mutate(value)}
+                      disabled={updateSalespersonMutation.isPending}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select salesperson">
+                          {customerData.salesperson ? `👤 ${customerData.salesperson}` : "Select salesperson"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white z-50">
+                        {salespeople?.map((person) => (
+                          <SelectItem 
+                            key={person.user_id} 
+                            value={`${person.first_name} ${person.last_name}`.trim()}
+                          >
+                            {person.first_name} {person.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardContent>
