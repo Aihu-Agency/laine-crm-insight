@@ -235,7 +235,7 @@ serve(async (req) => {
               'Type of apartment': record['Person - Property Type'] ? [record['Person - Property Type']] : undefined,
               'Time of purchase': normalizeTimeOfPurchase(record['Person - When to Buy?']) || undefined,
               'Areas of interest': record['Person - Where to Buy?'] ? [record['Person - Where to Buy?']] : undefined,
-              'Condition': parseCondition(record['Person - Resale Or New Development?']),
+              'Customer category': parseCondition(record['Person - Resale Or New Development?']),
               'Marketing permission': record['Person - Marketing permission'] === 'Kyllä',
               'Notes': notes || undefined,
               'Next Action Date': record['Person - Next activity date'] || undefined,
