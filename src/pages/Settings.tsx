@@ -21,7 +21,11 @@ type UserRow = {
   is_admin: boolean;
 };
 
-const Settings = () => {
+interface SettingsProps {
+  onLogout?: () => void;
+}
+
+const Settings = ({ onLogout }: SettingsProps) => {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -224,7 +228,7 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-laine-grey">
-      <Navigation />
+      <Navigation onLogout={onLogout} />
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         {/* User Profile Section */}
         <Card>

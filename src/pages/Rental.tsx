@@ -1,9 +1,13 @@
 import Navigation from "@/components/Navigation";
 
-const Rental = () => {
+interface RentalProps {
+  onLogout?: () => void;
+}
+
+const Rental = ({ onLogout }: RentalProps) => {
   return (
     <div className="min-h-screen bg-laine-grey">
-      <Navigation />
+      <Navigation onLogout={onLogout} />
       <div className="p-6">
         <p className="text-lg text-gray-700">Work in progress</p>
       </div>
