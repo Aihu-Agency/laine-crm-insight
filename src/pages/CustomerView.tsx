@@ -259,6 +259,15 @@ const CustomerView = () => {
                     <p className="font-medium">{customerData.sourceOfContact || '-'}</p>
                   </div>
                   <div>
+                    <p className="text-sm text-gray-500">Marketing permission</p>
+                    <Badge 
+                      variant={customerData.marketingPermission ? "default" : "outline"} 
+                      className="text-xs"
+                    >
+                      {customerData.marketingPermission ? "Yes" : "No"}
+                    </Badge>
+                  </div>
+                  <div>
                     <p className="text-sm text-gray-500 mb-1">Salesperson</p>
                     <Select
                       value={customerData.salesperson || ""}
