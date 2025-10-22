@@ -1,1 +1,10 @@
 project_id = "lgyapmkpkumydtufsmne"
+
+[functions.airtable-proxy]
+verify_jwt = true
+
+[functions.user-admin]
+verify_jwt = true
+
+[functions.import-customers]
+verify_jwt = true

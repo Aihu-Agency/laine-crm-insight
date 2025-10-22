@@ -30,6 +30,7 @@ export interface AirtableCustomer {
     'Next Action Note'?: string
     'Customer number'?: number
     'Properties'?: string[]
+    'Marketing permission'?: boolean
   }
   createdTime: string
 }
@@ -94,6 +95,7 @@ export interface Customer {
   tags?: string[]
   customerNumber?: number
   propertyIds?: string[]
+  marketingPermission?: boolean
   createdTime: string
 }
 
@@ -195,6 +197,7 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   tags: [], // Field doesn't exist in Airtable
   customerNumber: record.fields['Customer number'],
   propertyIds: record.fields['Properties'] || [],
+  marketingPermission: record.fields['Marketing permission'],
   createdTime: record.createdTime
 })
 

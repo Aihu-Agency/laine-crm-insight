@@ -13,6 +13,7 @@ import SalesFunnel from "./pages/SalesFunnel";
 import Rental from "./pages/Rental";
 import Todo from "./pages/Todo";
 import Settings from "./pages/Settings";
+import ImportClients from "./pages/ImportClients";
 import AddClientForm from "./components/AddClientForm";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="/rental" element={<ProtectedRoute><Rental onLogout={handleLogout} /></ProtectedRoute>} />
             <Route path="/todo" element={<ProtectedRoute><Todo onLogout={handleLogout} /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings onLogout={handleLogout} /></ProtectedRoute>} />
+            <Route path="/import-clients" element={<ProtectedRoute><ImportClients /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
