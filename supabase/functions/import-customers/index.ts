@@ -87,6 +87,47 @@ function parseCondition(value: string): string[] {
   return conditions
 }
 
+function parseBedrooms(value: string): string[] {
+  if (!value) return []
+  const raw = String(value).toLowerCase()
+
+  // Handle ranges like "1-3"
+  const range = raw.match(/(\d+)\s*[-–]\s*(\d+)/)
+  if (range) {
+    const start = parseInt(range[1], 10)
+    const end = parseInt(range[2], 10)
+    const out: string[] = []
+    for (let n = start; n <= end; n++) {
+      out.push(n >= 4 ? '4+' : String(n))
+    }
+    return Array.from(new Set(out))
+  }
+
+  // Split variants: commas, semicolons, slashes, and words for "and" (en/fi)
+  const parts = raw
+    .split(/[,;/]|\band\b|\bja\b|&/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+
+  const mapOne = (p: string): string => {
+    if (p.includes('studio')) return 'Studio'
+    const plus = p.match(/(\d+)\s*\+/)
+    if (plus) {
+      const n = parseInt(plus[1], 10)
+      return n >= 4 ? '4+' : `${n}+`
+    }
+    const num = p.match(/\d+/)
+    if (num) {
+      const n = parseInt(num[0], 10)
+      return n >= 4 ? '4+' : String(n)
+    }
+    return ''
+  }
+
+  const mapped = parts.map(mapOne).filter(Boolean)
+  return Array.from(new Set(mapped))
+}
+
 function getEmail(record: ImportRecord): string {
   return record['Person - Email - Work'] || 
          record['Person - Email - Home'] || 
@@ -253,7 +294,7 @@ serve(async (req) => {
               'Phone number': phone || undefined,
               'Sales person': salesperson,
               'Source of contact': record['Person - Source of contact'] ? [normalizeSourceOfContact(record['Person - Source of contact'])] : undefined,
-              'Bedrooms': record['Person - Rooms'] ? [record['Person - Rooms']] : undefined,
+              'Bedrooms': record['Person - Rooms'] ? parseBedrooms(record['Person - Rooms']) : undefined,
               'Type of apartment': record['Person - Property Type'] ? [record['Person - Property Type']] : undefined,
               'Time of purchase': normalizeTimeOfPurchase(record['Person - When to Buy?']) || undefined,
               'Areas of interest': record['Person - Where to Buy?'] ? [record['Person - Where to Buy?']] : undefined,
