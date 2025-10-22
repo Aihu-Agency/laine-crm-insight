@@ -87,6 +87,38 @@ function parseCondition(value: string): string[] {
   return conditions
 }
 
+// Parse property type from various formats
+function parsePropertyType(value: string): string[] {
+  if (!value || typeof value !== 'string') return []
+  
+  // Mapping of common variations to Airtable options
+  const typeMap: { [key: string]: string } = {
+    'apartment': 'Apartment',
+    'townhouse': 'Town house',
+    'town house': 'Town house',
+    'semi-detached house': 'House',
+    'semi-detached': 'House',
+    'villa': 'Villa',
+    'house': 'House',
+    'duplex': 'Duplex',
+    'penthouse': 'Penthouse',
+    'studio': 'Studio',
+    'other': 'Other',
+    'plots and lands': 'Other',
+    'plot': 'Other',
+    'land': 'Other',
+  }
+  
+  // Split by comma and normalize each type
+  const types = value.split(',').map(t => {
+    const normalized = t.trim().toLowerCase()
+    return typeMap[normalized] || null
+  }).filter(Boolean)
+  
+  // Remove duplicates
+  return [...new Set(types)]
+}
+
 function parseBedrooms(value: string): string[] {
   if (!value) return []
   const raw = String(value).toLowerCase()
@@ -295,7 +327,7 @@ serve(async (req) => {
               'Sales person': salesperson,
               'Source of contact': record['Person - Source of contact'] ? [normalizeSourceOfContact(record['Person - Source of contact'])] : undefined,
               'Bedrooms': record['Person - Rooms'] ? parseBedrooms(record['Person - Rooms']) : undefined,
-              'Type of apartment': record['Person - Property Type'] ? [record['Person - Property Type']] : undefined,
+              'Type of apartment': record['Person - Property Type'] ? parsePropertyType(record['Person - Property Type']) : undefined,
               'Time of purchase': normalizeTimeOfPurchase(record['Person - When to Buy?']) || undefined,
               'Areas of interest': record['Person - Where to Buy?'] ? [record['Person - Where to Buy?']] : undefined,
               'Customer category': parseCondition(record['Person - Resale Or New Development?']),
