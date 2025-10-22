@@ -48,7 +48,17 @@ const Navigation = ({ onLogout }: NavigationProps) => {
           ))}
         </div>
         
-        <div className="w-24"></div>
+        <div className="flex items-center">
+          {onLogout && (
+            <Button
+              variant="ghost"
+              onClick={onLogout}
+              className="text-gray-600 hover:text-primary hover:bg-laine-grey"
+            >
+              Logout
+            </Button>
+          )}
+        </div>
       </div>
     </nav>
   );
