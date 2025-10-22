@@ -56,6 +56,28 @@ function normalizeTimeOfPurchase(value: string): string {
   return value
 }
 
+function normalizeSourceOfContact(value: string): string {
+  if (!value) return ''
+  
+  const normalized = value.trim()
+  
+  // Map common variations to exact Airtable option names
+  if (normalized.includes('Contact form') && normalized.includes('property link')) {
+    return 'Contact form, property link from web page'
+  }
+  if (normalized.toLowerCase().includes('property listing')) {
+    return 'Property listing'
+  }
+  if (normalized.toLowerCase().includes('idealista')) {
+    return 'Idealista'
+  }
+  if (normalized.toLowerCase().includes('etuovi')) {
+    return 'Etuovi'
+  }
+  
+  return normalized
+}
+
 function parseCondition(value: string): string[] {
   if (!value) return []
   const conditions: string[] = []
@@ -230,7 +252,7 @@ serve(async (req) => {
               'Email': email || undefined,
               'Phone number': phone || undefined,
               'Sales person': salesperson,
-              'Source of contact': record['Person - Source of contact'] ? [record['Person - Source of contact']] : undefined,
+              'Source of contact': record['Person - Source of contact'] ? [normalizeSourceOfContact(record['Person - Source of contact'])] : undefined,
               'Bedrooms': record['Person - Rooms'] ? [record['Person - Rooms']] : undefined,
               'Type of apartment': record['Person - Property Type'] ? [record['Person - Property Type']] : undefined,
               'Time of purchase': normalizeTimeOfPurchase(record['Person - When to Buy?']) || undefined,
