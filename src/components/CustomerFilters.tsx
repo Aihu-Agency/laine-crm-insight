@@ -26,7 +26,7 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
         const names = (data ?? []).map((p: any) => {
           const fn = (p.first_name as string | null) ?? '';
           const ln = (p.last_name as string | null) ?? '';
-          return fn.trim() || ln.trim() || 'Unknown';
+          return [fn, ln].filter(Boolean).join(' ').trim() || 'Unknown';
         });
         setSalespeople(names);
       }
