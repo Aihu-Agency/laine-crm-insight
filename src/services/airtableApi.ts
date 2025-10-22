@@ -22,8 +22,20 @@ class AirtableApiService {
 
   async getCustomers(): Promise<Customer[]> {
     try {
-      const data: AirtableResponse = await this.makeRequest('/customers')
-      return data.records.map(transformAirtableCustomer)
+      let allCustomers: Customer[] = [];
+      let offset: string | undefined;
+
+      do {
+        const params = new URLSearchParams();
+        if (offset) params.set('offset', offset);
+        
+        const data: AirtableResponse = await this.makeRequest(`/customers?${params.toString()}`);
+        const pageCustomers = data.records.map(transformAirtableCustomer);
+        allCustomers = [...allCustomers, ...pageCustomers];
+        offset = data.offset;
+      } while (offset);
+
+      return allCustomers;
     } catch (error) {
       console.error('Error fetching customers:', error)
       throw error
