@@ -281,10 +281,21 @@ serve(async (req) => {
 
     } else if (path.startsWith('/customers')) {
       if (actualMethod === 'GET') {
-        // Get all customers or a specific customer
+        // Get all customers or a specific customer, forward query string (e.g., offset)
         const customerId = path.split('/')[2]
+        let queryString = ''
+
+        if (actualEndpoint && actualEndpoint.includes('?')) {
+          queryString = actualEndpoint.split('?')[1]
+        } else {
+          const urlObj = new URL(req.url)
+          queryString = urlObj.searchParams.toString()
+        }
+
         if (customerId) {
           airtableUrl += `/${customerId}`
+        } else if (queryString) {
+          airtableUrl += `?${queryString}`
         }
       } else if (actualMethod === 'POST') {
         // Create new customer - use the unwrapped data

@@ -28,8 +28,9 @@ class AirtableApiService {
       do {
         const params = new URLSearchParams();
         if (offset) params.set('offset', offset);
-        
-        const data: AirtableResponse = await this.makeRequest(`/customers?${params.toString()}`);
+        const qs = params.toString();
+        const endpoint = qs ? `/customers?${qs}` : '/customers';
+        const data: AirtableResponse = await this.makeRequest(endpoint);
         const pageCustomers = data.records.map(transformAirtableCustomer);
         allCustomers = [...allCustomers, ...pageCustomers];
         offset = data.offset;
