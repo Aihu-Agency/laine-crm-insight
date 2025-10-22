@@ -177,11 +177,21 @@ function getPhone(record: ImportRecord): string {
 
 function getSalesperson(owner: string): string {
   if (!owner) return 'Sales Team'
-  const mapping = OWNER_TO_USER_MAP[owner]
-  if (mapping) {
-    return mapping.fullName
+  
+  // Normalize input: trim and convert to lowercase for matching
+  const normalizedOwner = owner.trim()
+  const normalizedKey = normalizedOwner.toLowerCase()
+  
+  // Find matching key (case-insensitive)
+  const matchedKey = Object.keys(OWNER_TO_USER_MAP).find(
+    key => key.toLowerCase() === normalizedKey
+  )
+  
+  if (matchedKey) {
+    return OWNER_TO_USER_MAP[matchedKey].fullName
   }
-  console.warn(`Unmapped owner: ${owner}, defaulting to Sales Team`)
+  
+  console.warn(`Unmapped owner: "${owner}", defaulting to Sales Team`)
   return 'Sales Team'
 }
 
