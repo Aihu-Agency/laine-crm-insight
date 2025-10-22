@@ -31,6 +31,7 @@ export interface AirtableCustomer {
     'Customer number'?: number
     'Properties'?: string[]
     'Marketing permission'?: boolean
+    'Active Search Date'?: string
   }
   createdTime: string
 }
@@ -96,6 +97,7 @@ export interface Customer {
   customerNumber?: number
   propertyIds?: string[]
   marketingPermission?: boolean
+  activeSearchDate?: string
   createdTime: string
 }
 
@@ -198,6 +200,7 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   customerNumber: record.fields['Customer number'],
   propertyIds: record.fields['Properties'] || [],
   marketingPermission: record.fields['Marketing permission'],
+  activeSearchDate: record.fields['Active Search Date'],
   createdTime: record.createdTime
 })
 

@@ -95,6 +95,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const [nextActionDate, setNextActionDate] = useState<Date | undefined>(
     initialData?.nextActionDate ? new Date(initialData.nextActionDate) : undefined
   );
+
+  const [activeSearchDate, setActiveSearchDate] = useState<Date | undefined>(
+    initialData?.activeSearchDate ? new Date(initialData.activeSearchDate) : undefined
+  );
   
   // Normalize initial Areas of Interest and track any dropped values
   const initialAreasRaw = initialData?.areasOfInterest
@@ -264,6 +268,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       
       nextActionNote: formData.nextActionNote,
       nextActionDate: nextActionDate ? format(nextActionDate, 'yyyy-MM-dd') : undefined,
+      activeSearchDate: activeSearchDate ? format(activeSearchDate, 'yyyy-MM-dd') : undefined,
     };
 
     if (isEditing && initialData?.id) {
@@ -442,6 +447,33 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                         <SelectItem value="Property shown">Property shown</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Active Search Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !activeSearchDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {activeSearchDate ? format(activeSearchDate, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={activeSearchDate}
+                          onSelect={setActiveSearchDate}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="salesperson">Salesperson</Label>
