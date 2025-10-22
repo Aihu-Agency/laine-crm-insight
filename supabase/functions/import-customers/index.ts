@@ -61,7 +61,7 @@ function parseCondition(value: string): string[] {
   const conditions: string[] = []
   const lower = value.toLowerCase()
   if (lower.includes('resale')) conditions.push('Resale buyer')
-  if (lower.includes('new development')) conditions.push('New Development')
+  if (lower.includes('new development')) conditions.push('New-build customer')
   return conditions
 }
 
