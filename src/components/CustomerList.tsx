@@ -18,7 +18,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['customers-page', pageSize, currentOffset],
-    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset, filterFormula: 'NOT({Archived})' }),
+    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset }),
     staleTime: 60 * 1000,
   });
 
