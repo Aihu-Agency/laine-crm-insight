@@ -25,25 +25,17 @@ const NewPropertiesCard = () => {
   ];
 
   return (
-    <Card>
+    <Card className="opacity-60 pointer-events-none">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold text-gray-800">
+        <CardTitle className="text-lg font-semibold text-gray-600">
           New properties available
         </CardTitle>
-        <span className="text-xs text-muted-foreground">Work In Progress</span>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {newProperties.map((item, index) => (
-            <div 
-              key={index} 
-              className="flex justify-between items-center py-3 px-4 bg-laine-beige rounded-lg hover:bg-laine-beige/80 transition-colors duration-200 cursor-pointer"
-              onClick={() => item.name === "Mikko Tuominen" && navigate("/customers/1")}
-            >
-              <span className="font-medium text-gray-800">{item.name}</span>
-              <span className="text-sm text-gray-600">{item.count}</span>
-            </div>
-          ))}
+        <div className="text-center py-8">
+          <p className="text-base font-medium text-gray-600">
+            This feature will be soon LIVE
+          </p>
         </div>
       </CardContent>
     </Card>
