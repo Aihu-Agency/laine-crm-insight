@@ -154,7 +154,7 @@ const ActionRequiredCard = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">
-          Action required
+          Tasks
         </CardTitle>
         {isAdmin && (
           <Button
