@@ -54,10 +54,11 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				// Custom Laine colors
-				'laine-mint': 'hsl(142 47% 85%)',
-				'laine-blue': 'hsl(210 30% 85%)',
-				'laine-beige': 'hsl(45 25% 90%)',
-				'laine-grey': 'hsl(210 15% 95%)',
+				'laine-navy': 'hsl(var(--laine-navy))',
+				'laine-sand': 'hsl(var(--laine-sand))',
+				'laine-mint': 'hsl(var(--laine-mint))',
+				'laine-white': 'hsl(var(--laine-white))',
+				'laine-grey': 'hsl(var(--laine-grey))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

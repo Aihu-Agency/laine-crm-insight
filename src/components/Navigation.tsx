@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate } from "react-router-dom";
+import laineHomesLogo from "@/assets/laine-homes-logo.svg";
 
 interface NavigationProps {
   onLogout?: () => void;
@@ -23,22 +24,22 @@ const Navigation = ({ onLogout }: NavigationProps) => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 px-6 py-4">
+    <nav className="bg-laine-navy border-b border-laine-navy/20 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <h1 className="text-xl font-bold text-primary">Laine Homes</h1>
-          <span className="text-sm text-muted-foreground">CRM</span>
+          <img src={laineHomesLogo} alt="Laine Homes" className="h-8" />
+          <span className="text-sm text-white/70">CRM</span>
         </div>
         
         <div className="flex items-center justify-center flex-1 space-x-6">
           {navItems.map((item) => (
             <Button
               key={item.name}
-              variant={item.active ? "default" : "ghost"}
+              variant={item.active ? "secondary" : "ghost"}
               className={`${
                 item.active 
-                  ? "bg-primary text-white" 
-                  : "text-gray-600 hover:text-primary hover:bg-laine-grey"
+                  ? "bg-white/10 text-white hover:bg-white/20" 
+                  : "text-white/80 hover:text-white hover:bg-white/10"
               }`}
               onClick={() => handleNavClick(item)}
             >
@@ -52,7 +53,7 @@ const Navigation = ({ onLogout }: NavigationProps) => {
             <Button
               variant="ghost"
               onClick={onLogout}
-              className="text-gray-600 hover:text-primary hover:bg-laine-grey"
+              className="text-white/80 hover:text-white hover:bg-white/10"
             >
               Logout
             </Button>

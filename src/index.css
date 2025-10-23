@@ -17,11 +17,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 210 30% 35%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 215 28% 17%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 38 45% 88%;
+    --secondary-foreground: 215 28% 17%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -30,7 +30,7 @@
     --accent-foreground: 142 47% 25%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -39,9 +39,10 @@
     --radius: 0.5rem;
 
     /* Custom Laine colors */
+    --laine-navy: 215 28% 17%;
+    --laine-sand: 38 45% 88%;
     --laine-mint: 142 47% 85%;
-    --laine-blue: 210 30% 85%;
-    --laine-beige: 45 25% 90%;
+    --laine-white: 0 0% 100%;
     --laine-grey: 210 15% 95%;
   }
 }
@@ -59,10 +60,10 @@
 
 @layer components {
   .laine-card {
-    @apply bg-white rounded-lg border border-gray-200 shadow-sm;
+    @apply bg-card rounded-lg border border-border shadow-sm;
   }
   
   .laine-section {
-    @apply bg-white rounded-lg border border-gray-200 p-6 shadow-sm;
+    @apply bg-card rounded-lg border border-border p-6 shadow-sm;
   }
 }
