@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import laineHomesLogo from "@/assets/laine-homes-logo.svg";
 
 const LoginPage = () => {
   const { toast } = useToast();
@@ -47,9 +48,12 @@ const LoginPage = () => {
     <div className="min-h-screen bg-laine-grey flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center pb-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-primary mb-2">Laine Homes</h1>
-            <div className="w-12 h-1 bg-accent mx-auto rounded"></div>
+          <div className="mb-6 bg-primary rounded-lg p-6">
+            <img 
+              src={laineHomesLogo} 
+              alt="Laine Homes" 
+              className="h-16 mx-auto"
+            />
           </div>
           <CardTitle className="text-xl font-semibold text-gray-800">
             Sign in to Laine CRM
