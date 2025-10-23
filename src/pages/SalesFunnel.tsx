@@ -82,7 +82,7 @@ const CustomerCard = ({ customer, isDragging = false }: { customer: UICustomer; 
 const DroppableColumn = ({ id, children }: { id: PhaseKey; children: React.ReactNode }) => {
   const { setNodeRef } = useDroppable({ id });
   return (
-    <div ref={setNodeRef}>
+    <div ref={setNodeRef} className="min-h-96">
       {children}
     </div>
   );
@@ -261,12 +261,17 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer>; targetPhase?: PhaseKey }) =>
       airtableApi.updateCustomer(customerId, data),
     onSuccess: async (_, variables) => {
-      // Clear override after server confirms
-      setPhaseOverrides((prev) => {
-        const { [variables.customerId]: _, ...rest } = prev;
-        return rest as Record<string, PhaseKey>;
-      });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      // Don't clear override immediately - wait a bit for the server to update
+      setTimeout(() => {
+        setPhaseOverrides((prev) => {
+          const { [variables.customerId]: _, ...rest } = prev;
+          return rest as Record<string, PhaseKey>;
+        });
+      }, 500);
+      
+      // Invalidate queries to refetch with new data
+      await queryClient.invalidateQueries({ queryKey: ["customers"] });
+      
       // If moved to Property shown, create a Customer Action entry
       if ((variables as any).targetPhase === "Property shown") {
         const today = new Date().toISOString().slice(0, 10);
@@ -281,9 +286,12 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       }
       toast({ title: "Updated", description: "Customer updated" });
     },
-    onError: () => {
+    onError: (_, variables) => {
       // Revert optimistic change on error
-      setPhaseOverrides((prev) => ({ ...prev, ...(activeId ? { [activeId]: undefined as unknown as PhaseKey } : {}) }));
+      setPhaseOverrides((prev) => {
+        const { [variables.customerId]: _, ...rest } = prev;
+        return rest as Record<string, PhaseKey>;
+      });
       toast({ title: "Error", description: "Failed to update customer", variant: "destructive" });
     },
   });
