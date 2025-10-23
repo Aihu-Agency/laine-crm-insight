@@ -14,7 +14,6 @@ const Navigation = ({ onLogout }: NavigationProps) => {
     { name: "Dashboard", path: "/dashboard", active: location.pathname === "/dashboard" },
     { name: "Sales Funnel", path: "/sales-funnel", active: location.pathname === "/sales-funnel" },
     { name: "Customers", path: "/customers", active: location.pathname === "/customers" },
-    { name: "Rental", path: "/rental", active: location.pathname === "/rental" },
     { name: "ToDo", path: "/todo", active: location.pathname === "/todo" },
     { name: "Settings", path: "/settings", active: location.pathname === "/settings" },
   ];
