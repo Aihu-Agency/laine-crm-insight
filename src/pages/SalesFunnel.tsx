@@ -20,6 +20,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { airtableApi } from "@/services/airtableApi";
 import { Customer } from "@/types/airtable";
 import { toast } from "@/hooks/use-toast";
+import CustomerFilters from "@/components/CustomerFilters";
+import { CustomerFiltersValue } from "@/types/filters";
 
 // Phase keys used in the funnel
 type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later";
@@ -121,8 +123,33 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const queryClient = useQueryClient();
   const [pageSize, setPageSize] = useState(50);
   const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
+  const [filters, setFilters] = useState<CustomerFiltersValue>({
+    search: "",
+    location: "",
+    salesperson: "",
+    timeOfPurchase: "",
+  });
 
   const currentOffset = visitedOffsets[visitedOffsets.length - 1];
+
+  const buildFilterFormula = () => {
+    const conditions: string[] = [];
+    
+    if (filters.search) {
+      conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First Name})), FIND(LOWER("${filters.search}"), LOWER({Last Name})))`);
+    }
+    if (filters.location) {
+      conditions.push(`FIND("${filters.location}", {Areas of Interest})`);
+    }
+    if (filters.salesperson) {
+      conditions.push(`{Salesperson} = "${filters.salesperson}"`);
+    }
+    if (filters.timeOfPurchase) {
+      conditions.push(`{Time of Purchase} = "${filters.timeOfPurchase}"`);
+    }
+    
+    return conditions.length > 0 ? `AND(${conditions.join(", ")})` : undefined;
+  };
 
   // SEO: title + meta description
   useEffect(() => {
@@ -145,8 +172,12 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ["customers-funnel", pageSize, currentOffset],
-    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset }),
+    queryKey: ["customers-funnel", pageSize, currentOffset, filters],
+    queryFn: () => airtableApi.getCustomers({ 
+      limit: pageSize, 
+      offset: currentOffset,
+      filterFormula: buildFilterFormula()
+    }),
     staleTime: 60 * 1000,
   });
 
@@ -155,6 +186,21 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
 
   const handlePageSizeChange = (value: string) => {
     setPageSize(parseInt(value));
+    setVisitedOffsets([undefined]);
+  };
+
+  const handleFiltersChange = (newFilters: CustomerFiltersValue) => {
+    setFilters(newFilters);
+    setVisitedOffsets([undefined]); // Reset to first page when filters change
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: "",
+      location: "",
+      salesperson: "",
+      timeOfPurchase: "",
+    });
     setVisitedOffsets([undefined]);
   };
 
@@ -180,6 +226,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     if (v.includes("1-3") || v.includes("0-3")) return "1-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
+    if (v.includes("unclear")) return "Later"; // Map Unclear to Later column
     return "Later";
   };
 
@@ -313,6 +360,15 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
             >
               + Add new customer
             </button>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-6">
+            <CustomerFilters 
+              value={filters} 
+              onChange={handleFiltersChange} 
+              onClear={handleClearFilters}
+            />
           </div>
 
           {/* Pagination Controls */}

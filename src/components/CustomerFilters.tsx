@@ -103,6 +103,7 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
               <SelectItem value="6-12 months">6-12 months</SelectItem>
               <SelectItem value="Later">Later</SelectItem>
               <SelectItem value="Property shown">Property shown</SelectItem>
+              <SelectItem value="Unclear">Unclear</SelectItem>
             </SelectContent>
           </Select>
         </div>
