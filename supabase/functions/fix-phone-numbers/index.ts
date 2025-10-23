@@ -83,12 +83,33 @@ Deno.serve(async (req) => {
 
       const trimmedPhone = phoneNumber.trim()
       
-      // Check if phone starts with digits 1-9 (not 0, not +)
-      if (/^[1-9]/.test(trimmedPhone)) {
+      // Normalize phone number: keep + at start if present, remove all other non-digits
+      let normalized = trimmedPhone
+      if (trimmedPhone.startsWith('+')) {
+        // Keep the + and remove all non-digits after it
+        normalized = '+' + trimmedPhone.slice(1).replace(/\D/g, '')
+      } else {
+        // Remove all non-digit characters
+        normalized = trimmedPhone.replace(/\D/g, '')
+      }
+      
+      // Skip if nothing changed or if number is empty after normalization
+      if (!normalized || normalized === trimmedPhone) {
+        continue
+      }
+      
+      // Check if normalized phone needs a leading 0 (starts with digits 1-9, not 0, not +)
+      let finalPhone = normalized
+      if (/^[1-9]/.test(normalized)) {
+        finalPhone = `0${normalized}`
+      }
+      
+      // Only add to fix list if the final phone differs from original
+      if (finalPhone !== trimmedPhone) {
         customersToFix.push({
           id: customer.id,
           oldPhone: trimmedPhone,
-          newPhone: `0${trimmedPhone}`
+          newPhone: finalPhone
         })
       }
     }
