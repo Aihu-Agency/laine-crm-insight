@@ -98,13 +98,14 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
             <SelectTrigger>
               <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-50 bg-white">
               <SelectItem value="1-3 months">1-3 months</SelectItem>
               <SelectItem value="3-6 months">3-6 months</SelectItem>
               <SelectItem value="6-12 months">6-12 months</SelectItem>
               <SelectItem value="Later">Later</SelectItem>
               <SelectItem value="Property shown">Property shown</SelectItem>
               <SelectItem value="Unclear">Unclear</SelectItem>
+              <SelectItem value="__not_specified__">Not specified</SelectItem>
             </SelectContent>
           </Select>
         </div>

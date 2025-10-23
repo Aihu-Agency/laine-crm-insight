@@ -145,7 +145,11 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       conditions.push(`{Salesperson} = "${filters.salesperson}"`);
     }
     if (filters.timeOfPurchase) {
-      conditions.push(`{Time of Purchase} = "${filters.timeOfPurchase}"`);
+      if (filters.timeOfPurchase === "__not_specified__") {
+        conditions.push(`{Time of Purchase} = ""`);
+      } else {
+        conditions.push(`{Time of Purchase} = "${filters.timeOfPurchase}"`);
+      }
     }
     
     return conditions.length > 0 ? `AND(${conditions.join(", ")})` : undefined;

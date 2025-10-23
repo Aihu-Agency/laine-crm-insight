@@ -50,7 +50,11 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
 
       if (top) {
         const t = (customer.timeOfPurchase || "").toLowerCase().trim();
-        if (t !== top) return false;
+        if (top === "__not_specified__") {
+          if (t !== "") return false;
+        } else {
+          if (t !== top) return false;
+        }
       }
 
       return true;
