@@ -16,50 +16,49 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
 
   const currentOffset = visitedOffsets[visitedOffsets.length - 1];
 
+  const buildFilterFormula = () => {
+    const conditions: string[] = [];
+    
+    if (filters.search) {
+      conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First name})), FIND(LOWER("${filters.search}"), LOWER({Last name})))`);
+    }
+    if (filters.location) {
+      conditions.push(`FIND("${filters.location}", {Areas of interest})`);
+    }
+    if (filters.salesperson && filters.salesperson !== "__all__") {
+      conditions.push(`{Sales person} = "${filters.salesperson}"`);
+    }
+    if (filters.timeOfPurchase) {
+      if (filters.timeOfPurchase === "__not_specified__") {
+        conditions.push(`NOT({Time of purchase})`);
+      } else {
+        conditions.push(`{Time of purchase} = "${filters.timeOfPurchase}"`);
+      }
+    }
+    
+    return conditions.length > 0 ? `AND(${conditions.join(", ")})` : undefined;
+  };
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['customers-page', pageSize, currentOffset],
-    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset }),
+    queryKey: ['customers-page', pageSize, currentOffset, filters],
+    queryFn: () => airtableApi.getCustomers({ 
+      limit: pageSize, 
+      offset: currentOffset,
+      filterFormula: buildFilterFormula()
+    }),
     staleTime: 60 * 1000,
   });
 
   const pageCustomers = (data?.customers || []) as Customer[];
 
+  // No longer need client-side filtering since we're using Airtable's filterFormula
   const filteredCustomers = useMemo(() => {
-    const list = pageCustomers;
-    const search = (filters.search || "").toLowerCase().trim();
-    const location = (filters.location || "").toLowerCase().trim();
-    const salesperson = (filters.salesperson || "").toLowerCase().trim();
-    const top = (filters.timeOfPurchase || "").toLowerCase().trim();
-
-    return list.filter((customer) => {
+    return pageCustomers.filter((customer) => {
       // Safety: Filter out archived customers in case server-side filter isn't applied
       if ((customer as any).archived) return false;
-
-      const name = `${customer.firstName || ""} ${customer.lastName || ""}`.toLowerCase();
-      if (search && !name.includes(search)) return false;
-
-      if (location) {
-        const areas = (customer.areasOfInterest || "").toLowerCase();
-        if (!areas.includes(location)) return false;
-      }
-
-      if (salesperson && salesperson !== "__all__") {
-        const sp = (customer.salesperson || "").toLowerCase().trim();
-        if (sp !== salesperson) return false;
-      }
-
-      if (top) {
-        const t = (customer.timeOfPurchase || "").toLowerCase().trim();
-        if (top === "__not_specified__") {
-          if (t !== "") return false;
-        } else {
-          if (t !== top) return false;
-        }
-      }
-
       return true;
     });
-  }, [pageCustomers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
+  }, [pageCustomers]);
 
   useEffect(() => {
     onCountChange?.(filteredCustomers.length);
@@ -71,6 +70,11 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
     setPageSize(parseInt(value));
     setVisitedOffsets([undefined]);
   };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setVisitedOffsets([undefined]);
+  }, [filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
 
   const handlePreviousPage = () => {
     if (visitedOffsets.length > 1) {
