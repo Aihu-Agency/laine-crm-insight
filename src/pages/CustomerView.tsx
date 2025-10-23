@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon, Archive, ArchiveRestore } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon, Archive, ArchiveRestore, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,20 @@ const CustomerView = () => {
     queryFn: () => airtableApi.getCustomer(id!),
     enabled: !!id,
   });
+
+  // Fetch customers list to enable prev/next navigation
+  const { data: customersListData } = useQuery({
+    queryKey: ['customers-navigation'],
+    queryFn: () => airtableApi.getCustomers({ limit: 200 }),
+    staleTime: 60 * 1000,
+  });
+
+  const customersList = customersListData?.customers || [];
+  const currentIndex = customersList.findIndex(c => c.id === id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < customersList.length - 1;
+  const previousCustomerId = hasPrevious ? customersList[currentIndex - 1]?.id : null;
+  const nextCustomerId = hasNext ? customersList[currentIndex + 1]?.id : null;
 
   const { data: properties, isLoading: isLoadingProperties } = useQuery({
     queryKey: ['properties', customerData?.propertyIds],
@@ -158,6 +172,18 @@ const CustomerView = () => {
     navigate("/customers");
   };
 
+  const handlePreviousCustomer = () => {
+    if (previousCustomerId) {
+      navigate(`/customers/${previousCustomerId}`);
+    }
+  };
+
+  const handleNextCustomer = () => {
+    if (nextCustomerId) {
+      navigate(`/customers/${nextCustomerId}`);
+    }
+  };
+
   const handleArchiveToggle = () => {
     const newArchivedStatus = !customerData.archived;
     updateCustomerMutation.mutate({
@@ -194,6 +220,29 @@ const CustomerView = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
+            
+            {/* Previous/Next Customer Navigation */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handlePreviousCustomer}
+                variant="outline"
+                size="sm"
+                disabled={!hasPrevious}
+                title="Previous customer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={handleNextCustomer}
+                variant="outline"
+                size="sm"
+                disabled={!hasNext}
+                title="Next customer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{customerData.firstName} {customerData.lastName}</h1>
               <div className="flex items-center gap-2 mt-1">
