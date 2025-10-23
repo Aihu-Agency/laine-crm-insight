@@ -139,6 +139,7 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Customer number': nextCustomerNumber,
         'Active Search Date': customerData.activeSearchDate,
+        'Archived': customerData.archived,
       };
 
       // Prepare warnings
@@ -269,6 +270,8 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Customer number': customerData.customerNumber,
         'Active Search Date': customerData.activeSearchDate,
+        'Archived': customerData.archived,
+        'Marketing permission': customerData.marketingPermission,
       };
 
       // Prepare warnings

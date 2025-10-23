@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon, Archive, ArchiveRestore } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +157,14 @@ const CustomerView = () => {
   const handleBackClick = () => {
     navigate("/customers");
   };
+
+  const handleArchiveToggle = () => {
+    const newArchivedStatus = !customerData.archived;
+    updateCustomerMutation.mutate({
+      customerId: id!,
+      data: { archived: newArchivedStatus }
+    });
+  };
   
   const getTimeOfPurchaseBadge = (v?: string) => {
     if (!v) return <Badge variant="outline" className="text-xs">-</Badge>;
@@ -189,6 +197,11 @@ const CustomerView = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{customerData.firstName} {customerData.lastName}</h1>
               <div className="flex items-center gap-2 mt-1">
+                {customerData.archived && (
+                  <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700">
+                    Archived
+                  </Badge>
+                )}
                 {customerData.tags?.map((tag, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
                     {tag}
@@ -199,6 +212,23 @@ const CustomerView = () => {
           </div>
           
           <div className="flex gap-2">
+            <Button 
+              variant={customerData.archived ? "default" : "outline"}
+              onClick={handleArchiveToggle}
+              disabled={updateCustomerMutation.isPending}
+            >
+              {customerData.archived ? (
+                <>
+                  <ArchiveRestore className="w-4 h-4 mr-2" />
+                  Restore
+                </>
+              ) : (
+                <>
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive
+                </>
+              )}
+            </Button>
             <Button onClick={handleEditCustomer}>
               Edit Customer
             </Button>

@@ -164,14 +164,16 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   };
 
   const uiCustomers: UICustomer[] = useMemo(() => {
-    return (customersData || []).map((c) => ({
-      id: c.id,
-      fullName: `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Unnamed",
-      phase: phaseOverrides[c.id] || getPhaseFor(c),
-      location: c.areasOfInterest,
-      budgetRange: formatBudget(c),
-      salesperson: c.salesperson,
-    }));
+    return (customersData || [])
+      .filter(c => !c.archived) // Filter out archived customers
+      .map((c) => ({
+        id: c.id,
+        fullName: `${c.firstName || ""} ${c.lastName || ""}`.trim() || "Unnamed",
+        phase: phaseOverrides[c.id] || getPhaseFor(c),
+        location: c.areasOfInterest,
+        budgetRange: formatBudget(c),
+        salesperson: c.salesperson,
+      }));
   }, [customersData, phaseOverrides]);
 
   const [activeId, setActiveId] = useState<string | null>(null);

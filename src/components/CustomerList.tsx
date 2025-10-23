@@ -36,6 +36,9 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
     const top = (filters.timeOfPurchase || "").toLowerCase().trim();
 
     return list.filter((customer) => {
+      // Filter out archived customers
+      if (customer.archived) return false;
+
       const name = `${customer.firstName || ""} ${customer.lastName || ""}`.toLowerCase();
       if (search && !name.includes(search)) return false;
 

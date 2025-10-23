@@ -79,7 +79,8 @@ const ActionRequiredCard = () => {
   const customersWithActions = Array.from(customerActionMap.entries())
     .map(([customerId, action]) => {
       const customer = customers.find(c => c.id === customerId);
-      return customer ? { customer, action } : null;
+      // Filter out archived customers
+      return customer && !customer.archived ? { customer, action } : null;
     })
     .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
 
