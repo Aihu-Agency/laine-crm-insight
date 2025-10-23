@@ -11,6 +11,9 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -116,6 +119,10 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
 const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [pageSize, setPageSize] = useState(50);
+  const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
+
+  const currentOffset = visitedOffsets[visitedOffsets.length - 1];
 
   // SEO: title + meta description
   useEffect(() => {
@@ -137,11 +144,32 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     []
   );
 
-  const { data: customersData, isLoading } = useQuery({
-    queryKey: ["customers-funnel"],
-    queryFn: () => airtableApi.getAllCustomers(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  const { data, isLoading } = useQuery({
+    queryKey: ["customers-funnel", pageSize, currentOffset],
+    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset }),
+    staleTime: 60 * 1000,
   });
+
+  const customersData = (data?.customers || []) as Customer[];
+  const currentPage = visitedOffsets.length;
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value));
+    setVisitedOffsets([undefined]);
+  };
+
+  const handlePreviousPage = () => {
+    if (visitedOffsets.length > 1) {
+      setVisitedOffsets((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const handleNextPage = () => {
+    const nextOffset = data?.offset;
+    if (nextOffset) {
+      setVisitedOffsets((prev) => [...prev, nextOffset]);
+    }
+  };
 
   // Optimistic local override of phase per customer id
   const [phaseOverrides, setPhaseOverrides] = useState<Record<string, PhaseKey>>({});
@@ -286,6 +314,52 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
               + Add new customer
             </button>
           </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border mb-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Showing {customersData.length} customers on this page
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Per page:</span>
+                <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600 px-2">
+                Page {currentPage}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!data?.offset}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
 
         {isLoading ? (
@@ -304,6 +378,40 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
 
             <DragOverlay>{activeCustomer ? <CustomerCard customer={activeCustomer} isDragging /> : null}</DragOverlay>
           </DndContext>
+        )}
+
+        {/* Bottom Pagination Controls */}
+        {!isLoading && (
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border mt-6">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Showing {customersData.length} customers on this page
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600 px-2">
+                Page {currentPage}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!data?.offset}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
