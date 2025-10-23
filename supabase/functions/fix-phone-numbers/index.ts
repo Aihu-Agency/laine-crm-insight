@@ -33,7 +33,8 @@ Deno.serve(async (req) => {
     let offset: string | undefined = undefined
 
     do {
-      const endpoint = offset ? `/customers?offset=${offset}` : '/customers'
+      const basePath = '/customers?pageSize=100'
+      const endpoint = offset ? `${basePath}&offset=${encodeURIComponent(offset)}` : basePath
       const { data: responseData, error } = await supabase.functions.invoke('airtable-proxy', {
         body: { endpoint, method: 'GET' }
       })
@@ -43,17 +44,29 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch customers: ${error.message}`)
       }
 
-      // The airtable-proxy returns the Airtable API response directly
-      const airtableResponse = responseData as { records: AirtableCustomer[]; offset?: string }
-      
-      if (!airtableResponse || !airtableResponse.records) {
-        console.error('Invalid response structure:', responseData)
-        throw new Error('Invalid response from airtable-proxy')
+      // The airtable-proxy returns the Airtable API response directly, but be robust to different shapes
+      let parsed: any = responseData
+      try {
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed)
+      } catch (_) {
+        // keep as-is
       }
 
-      allCustomers = [...allCustomers, ...airtableResponse.records]
-      offset = airtableResponse.offset
-      console.log(`Fetched ${airtableResponse.records.length} customers, total: ${allCustomers.length}`)
+      if (parsed && Array.isArray(parsed.records)) {
+        const records = parsed.records as AirtableCustomer[]
+        allCustomers = allCustomers.concat(records)
+        offset = parsed.offset
+        console.log(`Fetched ${records.length} customers, total: ${allCustomers.length}`)
+      } else if (parsed && parsed.id && parsed.fields) {
+        // Single-record response (unexpected for list endpoint) - handle gracefully
+        allCustomers.push(parsed as AirtableCustomer)
+        offset = undefined
+        console.log('Fetched single record response; stopping pagination')
+      } else {
+        console.error('Invalid response structure from airtable-proxy:', parsed)
+        // Break to avoid infinite loop; proceed with what we have
+        break
+      }
     } while (offset)
 
     console.log(`Total customers fetched: ${allCustomers.length}`)
