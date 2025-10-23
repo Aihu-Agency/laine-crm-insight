@@ -42,7 +42,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
   const { data, isLoading, error } = useQuery({
     queryKey: ['customers-page', pageSize, currentOffset, filters],
     queryFn: () => airtableApi.getCustomers({ 
-      limit: pageSize, 
+      limit: Math.min(pageSize, 100), // Airtable max is 100 per request
       offset: currentOffset,
       filterFormula: buildFilterFormula()
     }),
@@ -106,7 +106,6 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
                 <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
                 <SelectItem value="100">100</SelectItem>
-                <SelectItem value="200">200</SelectItem>
               </SelectContent>
             </Select>
           </div>
