@@ -108,8 +108,10 @@ class AirtableApiService {
         'Customer category': customerData.customerCategory,
         'Time of purchase': (() => {
           const raw = customerData.timeOfPurchase;
-          if (raw === '' || (raw && raw.toLowerCase() === 'unclear') || (raw && raw.toLowerCase() === 'not specified')) return null;
+          if (raw === '') return null; // Empty string clears the field
           const v = (raw || '').toLowerCase();
+          if (v === 'unclear') return 'Unclear';
+          if (v === 'not specified') return 'Not specified';
           if (v.includes('0-3') || v.includes('1-3')) return '1-3 months';
           if (v.includes('3-6')) return '3-6 months';
           if (v.includes('6-12')) return '6-12 months';
@@ -248,8 +250,10 @@ class AirtableApiService {
         'Customer category': customerData.customerCategory,
         'Time of purchase': (() => {
           const raw = customerData.timeOfPurchase;
-          if (raw === '' || (raw && raw.toLowerCase() === 'unclear') || (raw && raw.toLowerCase() === 'not specified')) return null;
+          if (raw === '') return null; // Empty string clears the field
           const v = (raw || '').toLowerCase();
+          if (v === 'unclear') return 'Unclear';
+          if (v === 'not specified') return 'Not specified';
           if (v.includes('0-3') || v.includes('1-3')) return '1-3 months';
           if (v.includes('3-6')) return '3-6 months';
           if (v.includes('6-12')) return '6-12 months';
