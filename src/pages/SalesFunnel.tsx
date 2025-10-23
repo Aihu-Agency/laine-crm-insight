@@ -24,7 +24,7 @@ import CustomerFilters from "@/components/CustomerFilters";
 import { CustomerFiltersValue } from "@/types/filters";
 
 // Phase keys used in the funnel
-type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later" | "Unclear";
+type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later" | "Unclear" | "Not Specified";
 
 interface SalesFunnelProps {
   onLogout?: () => void;
@@ -98,6 +98,7 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
     if (phase.includes("6-12")) return "bg-blue-100 border-blue-300";
     if (phase === "Later") return "bg-gray-100 border-gray-300";
     if (phase === "Unclear") return "bg-purple-100 border-purple-300";
+    if (phase === "Not Specified") return "bg-orange-100 border-orange-300";
     return "bg-gray-100 border-gray-300";
   };
 
@@ -171,6 +172,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       { key: "6-12 mo", title: "6-12 Months" },
       { key: "Later", title: "Later" },
       { key: "Unclear", title: "Unclear" },
+      { key: "Not Specified", title: "Not Specified (Temp)" },
     ],
     []
   );
@@ -226,12 +228,12 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
 
   const getPhaseFor = (c: Customer): PhaseKey => {
     const v = (c.timeOfPurchase || "").toLowerCase();
-    if (!v) return "Unclear"; // empty or not specified
+    if (!v) return "Not Specified"; // empty - from Pipedrive migration
     if (v.includes("property shown")) return "Property shown";
     if (v.includes("1-3") || v.includes("0-3")) return "1-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
-    if (v.includes("unclear")) return "Unclear";
+    if (v.includes("unclear")) return "Unclear"; // explicitly marked as unclear
     if (v.includes("later")) return "Later";
     return "Later";
   };
@@ -353,7 +355,9 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     } else if (targetPhase === "Later") {
       payload = { timeOfPurchase: "Later" };
     } else if (targetPhase === "Unclear") {
-      // Represent "Unclear" by clearing the field in Airtable (Not specified)
+      payload = { timeOfPurchase: "Unclear" };
+    } else if (targetPhase === "Not Specified") {
+      // Clear the field to represent not specified
       payload = { timeOfPurchase: "" } as any;
     }
 
@@ -439,7 +443,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
           <div className="text-gray-600">Loading customers...</div>
         ) : (
           <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
               {phases.map((phase) => (
                 <DroppableColumn key={phase.key} id={phase.key}>
                   <SortableContext items={uiCustomers.filter((c) => c.phase === phase.key).map((c) => c.id)} strategy={verticalListSortingStrategy}>
