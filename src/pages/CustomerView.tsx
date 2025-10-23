@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -262,13 +264,25 @@ const CustomerView = () => {
                     <p className="font-medium">{customerData.sourceOfContact || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Marketing permission</p>
-                    <Badge 
-                      variant={customerData.marketingPermission ? "default" : "outline"} 
-                      className="text-xs"
-                    >
-                      {customerData.marketingPermission ? "Yes" : "No"}
-                    </Badge>
+                    <Label htmlFor="marketing-permission" className="text-sm text-gray-500">
+                      Marketing permission
+                    </Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Switch
+                        id="marketing-permission"
+                        checked={customerData.marketingPermission || false}
+                        onCheckedChange={(checked) => {
+                          updateCustomerMutation.mutate({
+                            customerId: id!,
+                            data: { marketingPermission: checked }
+                          });
+                        }}
+                        disabled={updateCustomerMutation.isPending}
+                      />
+                      <span className="text-sm font-medium">
+                        {customerData.marketingPermission ? "Enabled" : "Disabled"}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Salesperson</p>
