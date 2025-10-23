@@ -106,7 +106,16 @@ class AirtableApiService {
         'Language': customerData.language,
         'Customer type': customerData.customerType,
         'Customer category': customerData.customerCategory,
-'Time of purchase': (() => { const v = (customerData.timeOfPurchase || '').toLowerCase(); if (v.includes('0-3') || v.includes('1-3')) return '1-3 months'; if (v.includes('3-6')) return '3-6 months'; if (v.includes('6-12')) return '6-12 months'; if (v === 'later') return 'Later'; return customerData.timeOfPurchase; })(),
+        'Time of purchase': (() => {
+          const raw = customerData.timeOfPurchase;
+          if (raw === '') return null;
+          const v = (raw || '').toLowerCase();
+          if (v.includes('0-3') || v.includes('1-3')) return '1-3 months';
+          if (v.includes('3-6')) return '3-6 months';
+          if (v.includes('6-12')) return '6-12 months';
+          if (v === 'later') return 'Later';
+          return customerData.timeOfPurchase;
+        })(),
         'Min price': customerData.minPrice,
         'Max price': customerData.maxPrice,
         'Areas of interest': sanitizedAreas.length ? sanitizedAreas : undefined,
@@ -237,7 +246,16 @@ class AirtableApiService {
         'Language': customerData.language,
         'Customer type': customerData.customerType,
         'Customer category': customerData.customerCategory,
-        'Time of purchase': (() => { const v = (customerData.timeOfPurchase || '').toLowerCase(); if (v.includes('0-3') || v.includes('1-3')) return '1-3 months'; if (v.includes('3-6')) return '3-6 months'; if (v.includes('6-12')) return '6-12 months'; if (v === 'later') return 'Later'; return customerData.timeOfPurchase; })(),
+        'Time of purchase': (() => {
+          const raw = customerData.timeOfPurchase;
+          if (raw === '') return null;
+          const v = (raw || '').toLowerCase();
+          if (v.includes('0-3') || v.includes('1-3')) return '1-3 months';
+          if (v.includes('3-6')) return '3-6 months';
+          if (v.includes('6-12')) return '6-12 months';
+          if (v === 'later') return 'Later';
+          return customerData.timeOfPurchase;
+        })(),
         'Min price': customerData.minPrice,
         'Max price': customerData.maxPrice,
         'Areas of interest': sanitizedAreas.length ? sanitizedAreas : undefined,

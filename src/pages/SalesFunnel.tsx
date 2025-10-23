@@ -226,11 +226,13 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
 
   const getPhaseFor = (c: Customer): PhaseKey => {
     const v = (c.timeOfPurchase || "").toLowerCase();
+    if (!v) return "Unclear"; // empty or not specified
     if (v.includes("property shown")) return "Property shown";
     if (v.includes("1-3") || v.includes("0-3")) return "1-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
     if (v.includes("unclear")) return "Unclear";
+    if (v.includes("later")) return "Later";
     return "Later";
   };
 
@@ -351,7 +353,8 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     } else if (targetPhase === "Later") {
       payload = { timeOfPurchase: "Later" };
     } else if (targetPhase === "Unclear") {
-      payload = { timeOfPurchase: "Unclear" };
+      // Represent "Unclear" by clearing the field in Airtable (Not specified)
+      payload = { timeOfPurchase: "" } as any;
     }
 
     updateCustomerMutation.mutate({ customerId: activeCustomer.id, data: payload, targetPhase });
