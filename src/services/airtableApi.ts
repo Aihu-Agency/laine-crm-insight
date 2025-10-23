@@ -20,11 +20,12 @@ class AirtableApiService {
     return data
   }
 
-  async getCustomers(options?: { limit?: number; offset?: string }): Promise<{ customers: Customer[]; offset?: string; hasMore: boolean }> {
+  async getCustomers(options?: { limit?: number; offset?: string; filterFormula?: string }): Promise<{ customers: Customer[]; offset?: string; hasMore: boolean }> {
     try {
       const params = new URLSearchParams();
       if (options?.limit) params.set('pageSize', options.limit.toString());
       if (options?.offset) params.set('offset', options.offset);
+      if (options?.filterFormula) params.set('filterByFormula', options.filterFormula);
       
       const qs = params.toString();
       const endpoint = qs ? `/customers?${qs}` : '/customers';

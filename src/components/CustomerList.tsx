@@ -11,33 +11,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValue; onCountChange?: (n: number) => void }) => {
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
 
-  // Load all customers for filtering (we need to know total count for filters)
-  const { data: customersResponse, isLoading, error } = useQuery({
-    queryKey: ['customers-all'],
-    queryFn: () => airtableApi.getAllCustomers(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  const currentOffset = visitedOffsets[visitedOffsets.length - 1];
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['customers-page', pageSize, currentOffset],
+    queryFn: () => airtableApi.getCustomers({ limit: pageSize, offset: currentOffset, filterFormula: 'NOT({Archived})' }),
+    staleTime: 60 * 1000,
   });
 
-  useEffect(() => {
-    if (customersResponse) {
-      setAllCustomers(customersResponse);
-    }
-  }, [customersResponse]);
+  const pageCustomers = (data?.customers || []) as Customer[];
 
   const filteredCustomers = useMemo(() => {
-    const list = allCustomers;
+    const list = pageCustomers;
     const search = (filters.search || "").toLowerCase().trim();
     const location = (filters.location || "").toLowerCase().trim();
     const salesperson = (filters.salesperson || "").toLowerCase().trim();
     const top = (filters.timeOfPurchase || "").toLowerCase().trim();
 
     return list.filter((customer) => {
-      // Filter out archived customers
-      if (customer.archived) return false;
+      // Safety: Filter out archived customers in case server-side filter isn't applied
+      if ((customer as any).archived) return false;
 
       const name = `${customer.firstName || ""} ${customer.lastName || ""}`.toLowerCase();
       if (search && !name.includes(search)) return false;
@@ -59,49 +55,31 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
 
       return true;
     });
-  }, [allCustomers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
+  }, [pageCustomers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
 
   useEffect(() => {
     onCountChange?.(filteredCustomers.length);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [filteredCustomers.length, onCountChange, filters]);
+  }, [filteredCustomers.length, onCountChange]);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
+  const currentPage = visitedOffsets.length;
 
   const handlePageSizeChange = (value: string) => {
     setPageSize(parseInt(value));
-    setCurrentPage(1);
+    setVisitedOffsets([undefined]);
   };
 
   const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1));
+    if (visitedOffsets.length > 1) {
+      setVisitedOffsets((prev) => prev.slice(0, -1));
+    }
   };
 
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+    const nextOffset = data?.offset;
+    if (nextOffset) {
+      setVisitedOffsets((prev) => [...prev, nextOffset]);
+    }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-gray-600">Loading customers...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-red-600">Error loading customers. Please try again.</div>
-      </div>
-    );
-  }
-
-
   return (
     <div className="space-y-4">
       {/* Pagination Controls - Top */}
