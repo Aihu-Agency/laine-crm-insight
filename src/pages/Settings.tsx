@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,6 +114,10 @@ const Settings = ({ onLogout }: SettingsProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "", is_admin: false });
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserRow | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -169,13 +174,21 @@ const Settings = ({ onLogout }: SettingsProps) => {
     setDialogOpen(false);
   };
 
-  const onDelete = async (u: UserRow) => {
+  const onDeleteClick = (u: UserRow) => {
     if (currentUserId === u.id) {
       toast({ title: "You cannot delete yourself", variant: "destructive" });
       return;
     }
-    await deleteUser.mutateAsync(u.id);
+    setUserToDelete(u);
+    setDeleteDialogOpen(true);
+  };
+
+  const onDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    await deleteUser.mutateAsync(userToDelete.id);
     toast({ title: "User deleted" });
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
   };
 
   // Profile form (current user only, uses direct table access)
@@ -400,7 +413,7 @@ const Settings = ({ onLogout }: SettingsProps) => {
                           <Button variant="outline" size="sm" onClick={() => onOpenEdit(user)}>
                             Edit
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => onDelete(user)}>
+                          <Button variant="outline" size="sm" onClick={() => onDeleteClick(user)}>
                             Delete
                           </Button>
                         </TableCell>
@@ -414,6 +427,21 @@ const Settings = ({ onLogout }: SettingsProps) => {
           </>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {userToDelete?.first_name} {userToDelete?.last_name} ({userToDelete?.email})? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
