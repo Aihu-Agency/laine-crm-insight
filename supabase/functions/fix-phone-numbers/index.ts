@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     do {
       const endpoint = offset ? `/customers?offset=${offset}` : '/customers'
-      const { data, error } = await supabase.functions.invoke('airtable-proxy', {
+      const { data: responseData, error } = await supabase.functions.invoke('airtable-proxy', {
         body: { endpoint, method: 'GET' }
       })
 
@@ -43,9 +43,17 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch customers: ${error.message}`)
       }
 
-      allCustomers = [...allCustomers, ...data.records]
-      offset = data.offset
-      console.log(`Fetched ${data.records.length} customers, total: ${allCustomers.length}`)
+      // The airtable-proxy returns the Airtable API response directly
+      const airtableResponse = responseData as { records: AirtableCustomer[]; offset?: string }
+      
+      if (!airtableResponse || !airtableResponse.records) {
+        console.error('Invalid response structure:', responseData)
+        throw new Error('Invalid response from airtable-proxy')
+      }
+
+      allCustomers = [...allCustomers, ...airtableResponse.records]
+      offset = airtableResponse.offset
+      console.log(`Fetched ${airtableResponse.records.length} customers, total: ${allCustomers.length}`)
     } while (offset)
 
     console.log(`Total customers fetched: ${allCustomers.length}`)
