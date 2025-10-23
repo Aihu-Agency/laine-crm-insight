@@ -79,6 +79,9 @@ const Todo = ({ onLogout }: TodoProps) => {
 
   const isLoading = customersLoading || actionsLoading;
 
+  // Don't show data until user profile is loaded to prevent flashing
+  const isDataReady = !isLoading && (userFullName !== null || userFirstName !== null || isAdmin);
+
   // Create list of actions with customer data
   const actionsWithCustomers = pendingActions
     .map(action => {
@@ -140,23 +143,23 @@ const Todo = ({ onLogout }: TodoProps) => {
       <Navigation onLogout={onLogout} />
       <div className="p-6 max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Scheduled Actions</h1>
+          <h1 className="text-2xl font-bold text-gray-900">My Scheduled Tasks</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            All your scheduled actions are listed here
+            All your scheduled tasks are listed here
           </p>
         </div>
 
-        {isLoading ? (
+        {!isDataReady ? (
           <Card>
             <CardContent className="p-6">
-              <div className="text-center text-muted-foreground">Loading actions...</div>
+              <div className="text-center text-muted-foreground">Loading tasks...</div>
             </CardContent>
           </Card>
         ) : filteredActions.length === 0 ? (
           <Card>
             <CardContent className="p-6">
               <div className="text-center text-muted-foreground">
-                No scheduled actions found
+                No scheduled tasks found
               </div>
             </CardContent>
           </Card>
@@ -190,7 +193,7 @@ const Todo = ({ onLogout }: TodoProps) => {
                         </div>
                       </div>
 
-                      {/* Action Date */}
+                      {/* Task Date */}
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="w-4 h-4" />
                         <span>
@@ -229,7 +232,7 @@ const Todo = ({ onLogout }: TodoProps) => {
         {/* Summary */}
         {!isLoading && filteredActions.length > 0 && (
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Showing {filteredActions.length} scheduled action{filteredActions.length !== 1 ? 's' : ''}
+            Showing {filteredActions.length} scheduled task{filteredActions.length !== 1 ? 's' : ''}
           </div>
         )}
       </div>

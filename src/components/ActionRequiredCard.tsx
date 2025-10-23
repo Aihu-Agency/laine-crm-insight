@@ -76,6 +76,9 @@ const ActionRequiredCard = () => {
 
   const isLoading = customersLoading || actionsLoading;
 
+  // Don't show data until user profile is loaded to prevent flashing
+  const isDataReady = !isLoading && (userFullName !== null || userFirstName !== null || isAdmin);
+
   // Group pending actions by customer ID and get the earliest action for each customer
   const customerActionMap = new Map<string, CustomerAction>();
   
@@ -168,10 +171,10 @@ const ActionRequiredCard = () => {
         )}
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {!isDataReady ? (
           <div className="text-sm text-muted-foreground">Loading...</div>
         ) : visible.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No upcoming actions</div>
+          <div className="text-sm text-muted-foreground">No upcoming tasks</div>
         ) : (
           <div className="space-y-3">
             {visible.map(({ customer, action }) => (
