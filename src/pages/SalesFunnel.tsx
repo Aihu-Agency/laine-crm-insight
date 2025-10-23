@@ -24,7 +24,7 @@ import CustomerFilters from "@/components/CustomerFilters";
 import { CustomerFiltersValue } from "@/types/filters";
 
 // Phase keys used in the funnel
-type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later";
+type PhaseKey = "Property shown" | "1-3 mo" | "3-6 mo" | "6-12 mo" | "Later" | "Unclear";
 
 interface SalesFunnelProps {
   onLogout?: () => void;
@@ -97,6 +97,7 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
     if (phase.includes("3-6")) return "bg-yellow-100 border-yellow-300";
     if (phase.includes("6-12")) return "bg-blue-100 border-blue-300";
     if (phase === "Later") return "bg-gray-100 border-gray-300";
+    if (phase === "Unclear") return "bg-purple-100 border-purple-300";
     return "bg-gray-100 border-gray-300";
   };
 
@@ -171,6 +172,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       { key: "3-6 mo", title: "3-6 Months" },
       { key: "6-12 mo", title: "6-12 Months" },
       { key: "Later", title: "Later" },
+      { key: "Unclear", title: "Unclear" },
     ],
     []
   );
@@ -230,7 +232,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     if (v.includes("1-3") || v.includes("0-3")) return "1-3 mo";
     if (v.includes("3-6")) return "3-6 mo";
     if (v.includes("6-12")) return "6-12 mo";
-    if (v.includes("unclear")) return "Later"; // Map Unclear to Later column
+    if (v.includes("unclear")) return "Unclear";
     return "Later";
   };
 
@@ -341,6 +343,8 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       payload = { timeOfPurchase: "6-12 months" };
     } else if (targetPhase === "Later") {
       payload = { timeOfPurchase: "Later" };
+    } else if (targetPhase === "Unclear") {
+      payload = { timeOfPurchase: "Unclear" };
     }
 
     updateCustomerMutation.mutate({ customerId: activeCustomer.id, data: payload, targetPhase });
@@ -425,7 +429,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
           <div className="text-gray-600">Loading customers...</div>
         ) : (
           <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
               {phases.map((phase) => (
                 <DroppableColumn key={phase.key} id={phase.key}>
                   <SortableContext items={uiCustomers.filter((c) => c.phase === phase.key).map((c) => c.id)} strategy={verticalListSortingStrategy}>
