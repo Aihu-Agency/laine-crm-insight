@@ -121,7 +121,7 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
 const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
   const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
   const [filters, setFilters] = useState<CustomerFiltersValue>({
     search: "",

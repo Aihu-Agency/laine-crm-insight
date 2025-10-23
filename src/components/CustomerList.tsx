@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValue; onCountChange?: (n: number) => void }) => {
   const navigate = useNavigate();
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
   const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
 
   const currentOffset = visitedOffsets[visitedOffsets.length - 1];
