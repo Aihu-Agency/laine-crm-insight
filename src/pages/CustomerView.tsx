@@ -62,10 +62,20 @@ const CustomerView = () => {
     },
   });
 
+  // Filter properties created within last 3 months
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  
+  const recentProperties = properties?.filter(property => {
+    if (!property.createdTime) return false;
+    const propertyCreatedDate = new Date(property.createdTime);
+    return propertyCreatedDate >= threeMonthsAgo;
+  });
+
   // Limit to 2 properties for customer number 1002 (Mikko Tuominen), show all for others
   const displayProperties = customerData?.customerNumber === 1002 
-    ? properties?.slice(0, 2) 
-    : properties;
+    ? recentProperties?.slice(0, 2) 
+    : recentProperties;
 
   const updateCustomerMutation = useMutation({
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
@@ -642,12 +652,12 @@ const CustomerView = () => {
                         )}
                         
                         {/* View Details Button */}
-                        {property.propertyIdUrl && (
+                        {property.propertyDetailUrl && (
                           <Button 
                             variant="outline" 
                             size="sm" 
                             className="w-full text-xs h-8"
-                            onClick={() => window.open(property.propertyIdUrl, '_blank')}
+                            onClick={() => window.open(property.propertyDetailUrl, '_blank')}
                           >
                             View Full Details
                           </Button>
