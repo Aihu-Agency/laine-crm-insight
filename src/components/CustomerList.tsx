@@ -86,7 +86,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
+            Showing {filteredCustomers.length} customers on this page
           </span>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Per page:</span>
@@ -114,13 +114,13 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
             Previous
           </Button>
           <span className="text-sm text-gray-600 px-2">
-            Page {currentPage} of {totalPages}
+            Page {currentPage}
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={handleNextPage}
-            disabled={currentPage === totalPages}
+            disabled={!data?.offset}
           >
             Next
             <ChevronRight className="w-4 h-4" />
@@ -138,7 +138,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
         <div className="font-semibold text-gray-700 text-sm text-left">Actions</div>
       </div>
 
-      {paginatedCustomers.map((customer) => (
+      {filteredCustomers.map((customer) => (
         <Card key={customer.id} className="hover:shadow-md transition-shadow duration-200 cursor-pointer" onClick={() => navigate(`/customers/${customer.id}`)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/customers/${customer.id}`) }}>
           <CardContent className="p-4">
             <div 
@@ -183,7 +183,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
+            Showing {filteredCustomers.length} customers on this page
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -197,13 +197,13 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
             Previous
           </Button>
           <span className="text-sm text-gray-600 px-2">
-            Page {currentPage} of {totalPages}
+            Page {currentPage}
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={handleNextPage}
-            disabled={currentPage === totalPages}
+            disabled={!data?.offset}
           >
             Next
             <ChevronRight className="w-4 h-4" />
