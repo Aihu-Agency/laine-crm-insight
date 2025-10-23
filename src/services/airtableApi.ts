@@ -20,25 +20,42 @@ class AirtableApiService {
     return data
   }
 
-  async getCustomers(): Promise<Customer[]> {
+  async getCustomers(options?: { limit?: number; offset?: string }): Promise<{ customers: Customer[]; offset?: string; hasMore: boolean }> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.limit) params.set('pageSize', options.limit.toString());
+      if (options?.offset) params.set('offset', options.offset);
+      
+      const qs = params.toString();
+      const endpoint = qs ? `/customers?${qs}` : '/customers';
+      const data: AirtableResponse = await this.makeRequest(endpoint);
+      const customers = data.records.map(transformAirtableCustomer);
+      
+      return {
+        customers,
+        offset: data.offset,
+        hasMore: !!data.offset
+      };
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+      throw error
+    }
+  }
+
+  async getAllCustomers(): Promise<Customer[]> {
     try {
       let allCustomers: Customer[] = [];
       let offset: string | undefined;
 
       do {
-        const params = new URLSearchParams();
-        if (offset) params.set('offset', offset);
-        const qs = params.toString();
-        const endpoint = qs ? `/customers?${qs}` : '/customers';
-        const data: AirtableResponse = await this.makeRequest(endpoint);
-        const pageCustomers = data.records.map(transformAirtableCustomer);
-        allCustomers = [...allCustomers, ...pageCustomers];
-        offset = data.offset;
+        const result = await this.getCustomers({ offset });
+        allCustomers = [...allCustomers, ...result.customers];
+        offset = result.offset;
       } while (offset);
 
       return allCustomers;
     } catch (error) {
-      console.error('Error fetching customers:', error)
+      console.error('Error fetching all customers:', error)
       throw error
     }
   }
@@ -59,8 +76,8 @@ class AirtableApiService {
       let nextCustomerNumber = 1001; // Default starting number
       
       try {
-        const customers = await this.getCustomers();
-        const customerNumbers = customers
+        const allCustomers = await this.getAllCustomers();
+        const customerNumbers = allCustomers
           .map(c => c.customerNumber)
           .filter(num => num !== undefined && num !== null) as number[];
         

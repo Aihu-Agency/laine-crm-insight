@@ -51,8 +51,9 @@ const ActionRequiredCard = () => {
   }, []);
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => airtableApi.getCustomers(),
+    queryKey: ['customers-all'],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({

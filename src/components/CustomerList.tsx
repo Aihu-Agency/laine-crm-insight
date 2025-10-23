@@ -13,14 +13,23 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
 
-  const { data: customers = [], isLoading, error } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => airtableApi.getCustomers(),
+  // Load all customers for filtering (we need to know total count for filters)
+  const { data: customersResponse, isLoading, error } = useQuery({
+    queryKey: ['customers-all'],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
+  useEffect(() => {
+    if (customersResponse) {
+      setAllCustomers(customersResponse);
+    }
+  }, [customersResponse]);
+
   const filteredCustomers = useMemo(() => {
-    const list = customers as Customer[];
+    const list = allCustomers;
     const search = (filters.search || "").toLowerCase().trim();
     const location = (filters.location || "").toLowerCase().trim();
     const salesperson = (filters.salesperson || "").toLowerCase().trim();
@@ -47,7 +56,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
 
       return true;
     });
-  }, [customers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
+  }, [allCustomers, filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
 
   useEffect(() => {
     onCountChange?.(filteredCustomers.length);

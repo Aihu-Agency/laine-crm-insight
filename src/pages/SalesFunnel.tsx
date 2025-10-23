@@ -138,8 +138,9 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   );
 
   const { data: customersData, isLoading } = useQuery({
-    queryKey: ["customers"],
-    queryFn: () => airtableApi.getCustomers(),
+    queryKey: ["customers-funnel"],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   // Optimistic local override of phase per customer id
