@@ -126,7 +126,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const [filters, setFilters] = useState<CustomerFiltersValue>({
     search: "",
     location: "",
-    salesperson: "",
+    salesperson: "__all__",
     timeOfPurchase: "",
   });
 
@@ -141,7 +141,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     if (filters.location) {
       conditions.push(`FIND("${filters.location}", {Areas of Interest})`);
     }
-    if (filters.salesperson) {
+    if (filters.salesperson && filters.salesperson !== "__all__") {
       conditions.push(`{Salesperson} = "${filters.salesperson}"`);
     }
     if (filters.timeOfPurchase) {
@@ -198,7 +198,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     setFilters({
       search: "",
       location: "",
-      salesperson: "",
+      salesperson: "__all__",
       timeOfPurchase: "",
     });
     setVisitedOffsets([undefined]);

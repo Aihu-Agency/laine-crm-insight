@@ -78,7 +78,8 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
             <SelectTrigger>
               <SelectValue placeholder="Select salesperson" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-50 bg-white">
+              <SelectItem value="__all__">Everyone</SelectItem>
               {loadingSP ? (
                 <SelectItem value="loading" disabled>Loading...</SelectItem>
               ) : (salespeople.length ? (

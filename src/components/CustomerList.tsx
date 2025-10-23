@@ -43,7 +43,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
         if (!areas.includes(location)) return false;
       }
 
-      if (salesperson) {
+      if (salesperson && salesperson !== "__all__") {
         const sp = (customer.salesperson || "").toLowerCase().trim();
         if (sp !== salesperson) return false;
       }
