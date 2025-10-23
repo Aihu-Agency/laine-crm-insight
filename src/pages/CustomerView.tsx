@@ -35,14 +35,12 @@ const CustomerView = () => {
     enabled: !!id,
   });
 
-  // Fetch customers list to enable prev/next navigation
-  const { data: customersListData } = useQuery({
-    queryKey: ['customers-navigation'],
-    queryFn: () => airtableApi.getCustomers({ limit: 200 }),
-    staleTime: 60 * 1000,
+  // Fetch all customers list to enable prev/next navigation
+  const { data: customersList = [] } = useQuery({
+    queryKey: ['customers-all-navigation'],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
-
-  const customersList = customersListData?.customers || [];
   const currentIndex = customersList.findIndex(c => c.id === id);
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex >= 0 && currentIndex < customersList.length - 1;
