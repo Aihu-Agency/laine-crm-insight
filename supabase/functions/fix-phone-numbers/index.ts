@@ -1,0 +1,140 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface AirtableCustomer {
+  id: string
+  fields: {
+    'Phone number'?: string
+    [key: string]: any
+  }
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    console.log('Starting phone number cleanup...')
+
+    // Initialize Supabase client for calling airtable-proxy
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Fetch all customers from Airtable via proxy
+    console.log('Fetching customers from Airtable...')
+    let allCustomers: AirtableCustomer[] = []
+    let offset: string | undefined = undefined
+
+    do {
+      const endpoint = offset ? `/customers?offset=${offset}` : '/customers'
+      const { data, error } = await supabase.functions.invoke('airtable-proxy', {
+        body: { endpoint, method: 'GET' }
+      })
+
+      if (error) {
+        console.error('Error fetching customers:', error)
+        throw new Error(`Failed to fetch customers: ${error.message}`)
+      }
+
+      allCustomers = [...allCustomers, ...data.records]
+      offset = data.offset
+      console.log(`Fetched ${data.records.length} customers, total: ${allCustomers.length}`)
+    } while (offset)
+
+    console.log(`Total customers fetched: ${allCustomers.length}`)
+
+    // Find customers with phone numbers that need fixing
+    const customersToFix: Array<{ id: string; oldPhone: string; newPhone: string }> = []
+
+    for (const customer of allCustomers) {
+      const phoneNumber = customer.fields['Phone number']
+      
+      if (!phoneNumber || typeof phoneNumber !== 'string') {
+        continue
+      }
+
+      const trimmedPhone = phoneNumber.trim()
+      
+      // Check if phone starts with digits 1-9 (not 0, not +)
+      if (/^[1-9]/.test(trimmedPhone)) {
+        customersToFix.push({
+          id: customer.id,
+          oldPhone: trimmedPhone,
+          newPhone: `0${trimmedPhone}`
+        })
+      }
+    }
+
+    console.log(`Found ${customersToFix.length} customers with phone numbers to fix`)
+
+    // Update each customer
+    let successCount = 0
+    let errorCount = 0
+    const errors: Array<{ id: string; error: string }> = []
+
+    for (const customer of customersToFix) {
+      try {
+        console.log(`Updating customer ${customer.id}: ${customer.oldPhone} -> ${customer.newPhone}`)
+        
+        const { data, error } = await supabase.functions.invoke('airtable-proxy', {
+          body: {
+            endpoint: `/customers/${customer.id}`,
+            method: 'PATCH',
+            data: { 'Phone number': customer.newPhone }
+          }
+        })
+
+        if (error) {
+          console.error(`Error updating customer ${customer.id}:`, error)
+          errorCount++
+          errors.push({ id: customer.id, error: error.message })
+        } else {
+          successCount++
+          console.log(`Successfully updated customer ${customer.id}`)
+        }
+      } catch (err) {
+        console.error(`Exception updating customer ${customer.id}:`, err)
+        errorCount++
+        errors.push({ id: customer.id, error: String(err) })
+      }
+    }
+
+    const result = {
+      totalCustomers: allCustomers.length,
+      customersNeedingFix: customersToFix.length,
+      successfulUpdates: successCount,
+      failedUpdates: errorCount,
+      errors: errors.length > 0 ? errors : undefined
+    }
+
+    console.log('Phone number cleanup completed:', result)
+
+    return new Response(
+      JSON.stringify(result),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
+
+  } catch (error) {
+    console.error('Error in fix-phone-numbers function:', error)
+    return new Response(
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: String(error)
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      }
+    )
+  }
+})
