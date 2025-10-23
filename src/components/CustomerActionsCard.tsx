@@ -28,6 +28,13 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
     enabled: !!customerId,
   });
 
+  // Fetch customer data to get the salesperson
+  const { data: customer } = useQuery({
+    queryKey: ['customer', customerId],
+    queryFn: () => airtableApi.getCustomer(customerId),
+    enabled: !!customerId,
+  });
+
   const createActionMutation = useMutation({
     mutationFn: ({ customerId, actionData }: { customerId: string; actionData: { actionDescription: string; actionDate: string } }) =>
       airtableApi.createCustomerAction(customerId, actionData),
@@ -195,6 +202,11 @@ export const CustomerActionsCard = ({ customerId }: CustomerActionsCardProps) =>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Clock className="w-4 h-4 text-yellow-600" />
                         <span className="font-medium">{action.actionDescription}</span>
+                        {customer?.salesperson && (
+                          <Badge variant="secondary" className="text-xs">
+                            {customer.salesperson}
+                          </Badge>
+                        )}
                         <span className="text-sm text-gray-600">• Due: {formatActionDate(action.actionDate)}</span>
                       </div>
                     </div>

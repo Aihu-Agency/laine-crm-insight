@@ -138,7 +138,14 @@ const ActionRequiredCard = () => {
                 className="flex justify-between items-center py-3 px-4 rounded-lg transition-colors cursor-pointer hover:bg-accent"
                 onClick={() => handleCustomerClick(customer.id)}
               >
-                <span className="font-medium">{`${customer.firstName} ${customer.lastName}`.trim()}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{`${customer.firstName} ${customer.lastName}`.trim()}</span>
+                  {customer.salesperson && (
+                    <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-md">
+                      {customer.salesperson}
+                    </span>
+                  )}
+                </div>
                 <span className="text-sm text-muted-foreground">
                   {action.actionDescription ? `${action.actionDescription} • ` : ""}
                   {action.actionDate ? new Date(action.actionDate).toLocaleDateString() : ""}
