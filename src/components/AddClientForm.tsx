@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,8 +140,40 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const salespersonOptions = (salespeople ?? []).map((p: any) => {
     const fn = (p.firstName || '').trim();
     const ln = (p.lastName || '').trim();
-    return fn || ln || 'Unknown';
+    return fn && ln ? `${fn} ${ln}` : fn || ln || 'Unknown';
   });
+
+  // Check if user is admin and set default salesperson
+  useEffect(() => {
+    const checkUserRole = async () => {
+      // Only set default if not editing and salesperson not already set
+      if (isEditing || formData.salesperson) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user is admin
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      const isAdmin = roles?.some(r => r.role === 'admin');
+      
+      // If not admin, default to current user
+      if (!isAdmin && salespeople) {
+        const currentUser = salespeople.find((p: any) => p.id === user.id);
+        if (currentUser) {
+          const fn = (currentUser.firstName || '').trim();
+          const ln = (currentUser.lastName || '').trim();
+          const fullName = fn && ln ? `${fn} ${ln}` : fn || ln || 'Unknown';
+          setFormData(prev => ({ ...prev, salesperson: fullName }));
+        }
+      }
+    };
+    
+    checkUserRole();
+  }, [salespeople, isEditing, formData.salesperson]);
 
   const createCustomerMutation = useMutation({
     mutationFn: (customerData: Partial<Customer>) => airtableApi.createCustomer(customerData),
