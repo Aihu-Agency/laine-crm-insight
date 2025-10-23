@@ -136,19 +136,19 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     const conditions: string[] = [];
     
     if (filters.search) {
-      conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First Name})), FIND(LOWER("${filters.search}"), LOWER({Last Name})))`);
+      conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First name})), FIND(LOWER("${filters.search}"), LOWER({Last name})))`);
     }
     if (filters.location) {
-      conditions.push(`FIND("${filters.location}", {Areas of Interest})`);
+      conditions.push(`FIND("${filters.location}", {Areas of interest})`);
     }
     if (filters.salesperson && filters.salesperson !== "__all__") {
-      conditions.push(`{Salesperson} = "${filters.salesperson}"`);
+      conditions.push(`{Sales person} = "${filters.salesperson}"`);
     }
     if (filters.timeOfPurchase) {
       if (filters.timeOfPurchase === "__not_specified__") {
-        conditions.push(`{Time of Purchase} = ""`);
+        conditions.push(`NOT({Time of purchase})`);
       } else {
-        conditions.push(`{Time of Purchase} = "${filters.timeOfPurchase}"`);
+        conditions.push(`{Time of purchase} = "${filters.timeOfPurchase}"`);
       }
     }
     
