@@ -108,13 +108,11 @@ const PhaseColumn = ({ phase, customers, title }: { phase: PhaseKey; customers: 
         <p className="text-sm text-gray-600">{phaseCustomers.length} customers</p>
       </div>
 
-      <SortableContext items={phaseCustomers.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
-          {phaseCustomers.map((customer) => (
-            <CustomerCard key={customer.id} customer={customer} />
-          ))}
-        </div>
-      </SortableContext>
+      <div className="space-y-3">
+        {phaseCustomers.map((customer) => (
+          <CustomerCard key={customer.id} customer={customer} />
+        ))}
+      </div>
     </div>
   );
 };
