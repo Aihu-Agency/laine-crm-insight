@@ -4,7 +4,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  closestCorners,
+  pointerWithin,
   useDroppable,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -261,17 +261,18 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer>; targetPhase?: PhaseKey }) =>
       airtableApi.updateCustomer(customerId, data),
     onSuccess: async (_, variables) => {
-      // Don't clear override immediately - wait a bit for the server to update
-      setTimeout(() => {
-        setPhaseOverrides((prev) => {
-          const { [variables.customerId]: _, ...rest } = prev;
-          return rest as Record<string, PhaseKey>;
-        });
-      }, 500);
-      
-      // Invalidate queries to refetch with new data
-      await queryClient.invalidateQueries({ queryKey: ["customers"] });
-      
+      // Refetch lists so UI reflects server state
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["customers-funnel"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers-page"] }),
+      ]);
+
+      // Clear optimistic override after refetch
+      setPhaseOverrides((prev) => {
+        const { [variables.customerId]: _, ...rest } = prev;
+        return rest as Record<string, PhaseKey>;
+      });
+
       // If moved to Property shown, create a Customer Action entry
       if ((variables as any).targetPhase === "Property shown") {
         const today = new Date().toISOString().slice(0, 10);
@@ -434,7 +435,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
         {isLoading ? (
           <div className="text-gray-600">Loading customers...</div>
         ) : (
-          <DndContext collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <DndContext collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
               {phases.map((phase) => (
                 <DroppableColumn key={phase.key} id={phase.key}>
