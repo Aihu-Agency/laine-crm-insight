@@ -3,8 +3,10 @@ import Navigation from "@/components/Navigation";
 import CustomerFilters from "@/components/CustomerFilters";
 import CustomerList from "@/components/CustomerList";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CustomerFiltersValue } from "@/types/filters";
 import { Link } from "react-router-dom";
+import { airtableApi } from "@/services/airtableApi";
 
 interface CustomersProps {
   onLogout?: () => void;
@@ -13,6 +15,14 @@ interface CustomersProps {
 const Customers = ({ onLogout }: CustomersProps) => {
   const [filters, setFilters] = useState<CustomerFiltersValue>({ search: "", location: "", salesperson: "__all__", timeOfPurchase: "" });
   const [resultsCount, setResultsCount] = useState<number>(0);
+  
+  // Prefetch all customers for faster navigation in CustomerView
+  useQuery({
+    queryKey: ['customers-all-navigation'],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+  
   return (
     <div className="min-h-screen bg-laine-grey">
       <Navigation onLogout={onLogout} />

@@ -1,11 +1,12 @@
-
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Navigation from "./Navigation";
 import AddClientForm from "./AddClientForm";
 import ClientSavedOverlay from "./ClientSavedOverlay";
 import NewPropertiesCard from "./NewPropertiesCard";
 import ActionRequiredCard from "./ActionRequiredCard";
 import AddCustomerCard from "./AddCustomerCard";
+import { airtableApi } from "@/services/airtableApi";
 
 interface DashboardProps {
   onLogout?: () => void;
@@ -18,6 +19,13 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     firstName: "",
     lastName: "",
     areaOfInterest: ""
+  });
+
+  // Prefetch all customers for faster navigation in CustomerView
+  useQuery({
+    queryKey: ['customers-all-navigation'],
+    queryFn: () => airtableApi.getAllCustomers(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   const handleContinue = () => {
