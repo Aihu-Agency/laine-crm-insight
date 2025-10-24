@@ -77,7 +77,6 @@ const Todo = ({ onLogout }: TodoProps) => {
     queryKey: ['customers-all'],
     queryFn: () => airtableApi.getAllCustomers(),
     staleTime: 5 * 60 * 1000,
-    enabled: !shouldUseServerFiltering, // Only fetch all customers if admin
   });
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
@@ -98,18 +97,12 @@ const Todo = ({ onLogout }: TodoProps) => {
   const isDataReady = !profileLoading && !actionsLoading && (userFullName !== null || userFirstName !== null || isAdmin);
 
   // Create list of actions with customer data
-  // When using server-side filtering, actions are already filtered
-  const actionsWithCustomers = shouldUseServerFiltering
-    ? pendingActions.map(action => ({
-        action,
-        customer: { id: action.customerId } as any // Placeholder when using server-side filtering
-      }))
-    : pendingActions
-        .map(action => {
-          const customer = customers.find(c => c.id === action.customerId);
-          return customer && !customer.archived ? { action, customer } : null;
-        })
-        .filter(Boolean) as Array<{ action: CustomerAction; customer: any }>;
+  const actionsWithCustomers = pendingActions
+    .map(action => {
+      const customer = customers.find(c => c.id === action.customerId);
+      return customer && !customer.archived ? { action, customer } : null;
+    })
+    .filter(Boolean) as Array<{ action: CustomerAction; customer: any }>;
 
   // Filter and sort actions
   // When using server-side filtering, actions are already filtered by salesperson

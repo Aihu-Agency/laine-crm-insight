@@ -74,7 +74,6 @@ const ActionRequiredCard = () => {
     queryKey: ['customers-all'],
     queryFn: () => airtableApi.getAllCustomers(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    enabled: !shouldUseServerFiltering, // Only fetch all customers when showing everyone
   });
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
@@ -107,19 +106,13 @@ const ActionRequiredCard = () => {
   });
 
   // Create customer data with their earliest pending action
-  // When using server-side filtering, we may not have customer data yet
-  const customersWithActions = shouldUseServerFiltering
-    ? Array.from(customerActionMap.entries()).map(([customerId, action]) => ({
-        customer: { id: customerId } as any, // Placeholder when using server-side filtering
-        action
-      }))
-    : Array.from(customerActionMap.entries())
-        .map(([customerId, action]) => {
-          const customer = customers.find(c => c.id === customerId);
-          // Filter out archived customers
-          return customer && !customer.archived ? { customer, action } : null;
-        })
-        .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
+  const customersWithActions = Array.from(customerActionMap.entries())
+    .map(([customerId, action]) => {
+      const customer = customers.find(c => c.id === customerId);
+      // Filter out archived customers
+      return customer && !customer.archived ? { customer, action } : null;
+    })
+    .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
 
   // Filter and sort actions
   // When using server-side filtering, actions are already filtered by salesperson
