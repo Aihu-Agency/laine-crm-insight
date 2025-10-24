@@ -162,6 +162,97 @@ serve(async (req) => {
 
         const searchParams = new URLSearchParams(queryString)
         const customerIdParam = searchParams.get('customerId')
+        const salespersonParam = searchParams.get('salesperson')
+
+        if (salespersonParam) {
+          console.log('[Airtable Proxy] Server-side filtering Customer Actions by salesperson:', salespersonParam)
+
+          let allRecords: any[] = []
+          let offset: string | undefined = undefined
+          let page = 1
+
+          // First, fetch all customers for this salesperson
+          let customerUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers?pageSize=100`
+          let customerRecords: any[] = []
+          let customerOffset: string | undefined = undefined
+
+          do {
+            let pageUrl = customerOffset ? `${customerUrl}&offset=${customerOffset}` : customerUrl
+            const resp = await fetch(pageUrl, { headers: airtableHeaders })
+            const pageData = await resp.json()
+
+            if (!resp.ok) {
+              console.error('[Airtable Proxy] Airtable error while fetching customers:', pageData)
+              return new Response(JSON.stringify({ error: 'Failed to fetch customers', details: pageData }), {
+                status: resp.status,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              })
+            }
+
+            const pageRecords = Array.isArray(pageData.records) ? pageData.records : []
+            customerRecords = customerRecords.concat(pageRecords)
+            customerOffset = pageData.offset
+          } while (customerOffset)
+
+          // Filter customers by salesperson
+          const salespersonCustomers = customerRecords.filter((rec) => {
+            const f = rec?.fields || {}
+            return f['Sales person'] === salespersonParam
+          })
+
+          const customerIds = salespersonCustomers.map(rec => rec.id)
+          console.log(`[Airtable Proxy] Found ${customerIds.length} customers for salesperson: ${salespersonParam}`)
+
+          if (customerIds.length === 0) {
+            return new Response(JSON.stringify({ records: [] }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
+          // Now fetch all pending actions
+          do {
+            let pageUrl = `${airtableUrl}?pageSize=100&sort[0][field]=Action%20Date&sort[0][direction]=asc`
+            if (offset) pageUrl += `&offset=${offset}`
+
+            console.log(`[Airtable Proxy] Fetching Customer Actions page ${page}`)
+            const resp = await fetch(pageUrl, { headers: airtableHeaders })
+            const pageData = await resp.json()
+
+            if (!resp.ok) {
+              console.error('[Airtable Proxy] Airtable error while paging Customer Actions:', pageData)
+              return new Response(JSON.stringify({ error: 'Failed to fetch customer actions', details: pageData }), {
+                status: resp.status,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              })
+            }
+
+            const pageRecords = Array.isArray(pageData.records) ? pageData.records : []
+            allRecords = allRecords.concat(pageRecords)
+            offset = pageData.offset
+            page += 1
+          } while (offset)
+
+          // Filter by customer IDs and pending status
+          const filtered = allRecords.filter((rec) => {
+            const f = rec?.fields || {}
+            const links = Array.isArray(f['Customer']) ? f['Customer'] : (Array.isArray(f['Customers']) ? f['Customers'] : [])
+            const isForSalesperson = links.some((link: string) => customerIds.includes(link))
+            const isPending = f['Completed'] !== 'Done'
+            return isForSalesperson && isPending
+          })
+
+          // Ensure consistent sorting by Action Date ASC (nulls last)
+          filtered.sort((a: any, b: any) => {
+            const da = a?.fields?.['Action Date'] ? Date.parse(a.fields['Action Date']) : Number.POSITIVE_INFINITY
+            const db = b?.fields?.['Action Date'] ? Date.parse(b.fields['Action Date']) : Number.POSITIVE_INFINITY
+            return da - db
+          })
+
+          console.log(`[Airtable Proxy] Returning ${filtered.length} filtered actions for salesperson: ${salespersonParam}`)
+          return new Response(JSON.stringify({ records: filtered }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
 
         if (customerIdParam) {
           console.log('[Airtable Proxy] Server-side filtering Customer Actions by customerId:', customerIdParam)

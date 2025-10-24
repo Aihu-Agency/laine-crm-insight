@@ -19,65 +19,80 @@ const ActionRequiredCard = () => {
   const [userFullName, setUserFullName] = useState<string | null>(null);
   const [userFirstName, setUserFirstName] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const normalizeName = (s?: string | null) =>
     (s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+  // Load user profile information (parallelized for speed)
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setUserFullName(null);
-        setUserFirstName(null);
-        setIsAdmin(false);
-        return;
-      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setUserFullName(null);
+          setUserFirstName(null);
+          setIsAdmin(false);
+          setProfileLoading(false);
+          return;
+        }
 
-      // Check if user is admin
-      const { data: adminCheck } = await supabase.rpc('has_role', {
-        _user_id: user.id,
-        _role: 'admin'
-      });
-      setIsAdmin(adminCheck || false);
+        // Parallelize all profile data fetching
+        const [adminCheck, profileData] = await Promise.all([
+          supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
+          supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single()
+        ]);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user.id)
-        .single();
+        setIsAdmin(adminCheck.data || false);
 
-      if (!error && data) {
-        const first = data.first_name || null;
-        const last = data.last_name || null;
-        const full = `${first || ''} ${last || ''}`.trim() || null;
-        setUserFirstName(first);
-        setUserFullName(full);
-      } else {
-        const metaFirst = (user.user_metadata?.first_name as string) || null;
-        const metaLast = (user.user_metadata?.last_name as string) || null;
-        const fullMeta = `${metaFirst || ''} ${metaLast || ''}`.trim() || null;
-        setUserFirstName(metaFirst);
-        setUserFullName(fullMeta);
+        if (!profileData.error && profileData.data) {
+          const first = profileData.data.first_name || null;
+          const last = profileData.data.last_name || null;
+          const full = `${first || ''} ${last || ''}`.trim() || null;
+          setUserFirstName(first);
+          setUserFullName(full);
+        } else {
+          const metaFirst = (user.user_metadata?.first_name as string) || null;
+          const metaLast = (user.user_metadata?.last_name as string) || null;
+          const fullMeta = `${metaFirst || ''} ${metaLast || ''}`.trim() || null;
+          setUserFirstName(metaFirst);
+          setUserFullName(fullMeta);
+        }
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      } finally {
+        setProfileLoading(false);
       }
     };
     loadProfile();
   }, []);
 
+  // Use server-side filtering when not showing everyone and not admin
+  const shouldUseServerFiltering = !showEveryone && !isAdmin && userFullName;
+  
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ['customers-all'],
     queryFn: () => airtableApi.getAllCustomers(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !shouldUseServerFiltering, // Only fetch all customers when showing everyone
   });
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
-    queryKey: ['pending-actions'],
-    queryFn: () => airtableApi.getAllPendingActions(),
+    queryKey: ['pending-actions', userFullName, shouldUseServerFiltering],
+    queryFn: async () => {
+      if (shouldUseServerFiltering && userFullName) {
+        // Use server-side filtering for better performance
+        return airtableApi.getPendingActionsBySalesperson(userFullName);
+      }
+      return airtableApi.getAllPendingActions();
+    },
+    enabled: !profileLoading, // Wait for profile to load before fetching
   });
 
-  const isLoading = customersLoading || actionsLoading;
+  const isLoading = customersLoading || actionsLoading || profileLoading;
 
   // Don't show data until user profile is loaded to prevent flashing
-  const isDataReady = !isLoading && (userFullName !== null || userFirstName !== null || isAdmin);
+  const isDataReady = !profileLoading && !actionsLoading && (userFullName !== null || userFirstName !== null || isAdmin);
 
   // Group pending actions by customer ID and get the earliest action for each customer
   const customerActionMap = new Map<string, CustomerAction>();
@@ -92,31 +107,45 @@ const ActionRequiredCard = () => {
   });
 
   // Create customer data with their earliest pending action
-  const customersWithActions = Array.from(customerActionMap.entries())
-    .map(([customerId, action]) => {
-      const customer = customers.find(c => c.id === customerId);
-      // Filter out archived customers
-      return customer && !customer.archived ? { customer, action } : null;
-    })
-    .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
+  // When using server-side filtering, we may not have customer data yet
+  const customersWithActions = shouldUseServerFiltering
+    ? Array.from(customerActionMap.entries()).map(([customerId, action]) => ({
+        customer: { id: customerId } as any, // Placeholder when using server-side filtering
+        action
+      }))
+    : Array.from(customerActionMap.entries())
+        .map(([customerId, action]) => {
+          const customer = customers.find(c => c.id === customerId);
+          // Filter out archived customers
+          return customer && !customer.archived ? { customer, action } : null;
+        })
+        .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
 
-  const filteredSorted = customersWithActions
-    .filter(({ customer }) => {
-      // Admins can see all or filter by showEveryone toggle
-      // Non-admins only see their own tasks
-      if (isAdmin && showEveryone) return true;
-      const sp = normalizeName(customer.salesperson);
-      const hasName = !!userFullName || !!userFirstName;
-      if (!hasName) return true;
-      const full = normalizeName(userFullName);
-      const first = normalizeName(userFirstName);
-      return sp === full || sp === first;
-    })
-    .sort((a, b) => {
-      const da = new Date(a.action.actionDate);
-      const db = new Date(b.action.actionDate);
-      return da.getTime() - db.getTime();
-    });
+  // Filter and sort actions
+  // When using server-side filtering, actions are already filtered by salesperson
+  const filteredSorted = shouldUseServerFiltering
+    ? customersWithActions.sort((a, b) => {
+        const da = new Date(a.action.actionDate);
+        const db = new Date(b.action.actionDate);
+        return da.getTime() - db.getTime();
+      })
+    : customersWithActions
+        .filter(({ customer }) => {
+          // Admins can see all or filter by showEveryone toggle
+          // Non-admins only see their own tasks
+          if (isAdmin && showEveryone) return true;
+          const sp = normalizeName(customer.salesperson);
+          const hasName = !!userFullName || !!userFirstName;
+          if (!hasName) return true;
+          const full = normalizeName(userFullName);
+          const first = normalizeName(userFirstName);
+          return sp === full || sp === first;
+        })
+        .sort((a, b) => {
+          const da = new Date(a.action.actionDate);
+          const db = new Date(b.action.actionDate);
+          return da.getTime() - db.getTime();
+        });
 
   const visible = filteredSorted.slice(0, limit);
 

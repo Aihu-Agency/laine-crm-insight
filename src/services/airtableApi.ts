@@ -464,6 +464,20 @@ class AirtableApiService {
     }
   }
 
+  // Get pending customer actions filtered by salesperson (server-side filtering)
+  async getPendingActionsBySalesperson(salesperson: string): Promise<CustomerAction[]> {
+    try {
+      const params = new URLSearchParams();
+      params.set('salesperson', salesperson);
+      
+      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`);
+      return data.records.map(transformAirtableCustomerAction);
+    } catch (error) {
+      console.error('Error fetching pending actions by salesperson:', error);
+      throw error;
+    }
+  }
+
   // Property methods
   async getProperties(propertyIds: string[]): Promise<Property[]> {
     try {
