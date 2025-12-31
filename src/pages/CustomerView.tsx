@@ -47,17 +47,11 @@ const CustomerView = () => {
   const previousCustomerId = hasPrevious ? customersList[currentIndex - 1]?.id : null;
   const nextCustomerId = hasNext ? customersList[currentIndex + 1]?.id : null;
 
-  // Fetch suggested properties based on customer preferences (areas of interest, price, bedrooms)
-  const { data: suggestedProperties, isLoading: isLoadingProperties } = useQuery({
-    queryKey: ['suggested-properties', customerData?.areasOfInterest, customerData?.minPrice, customerData?.maxPrice, customerData?.bedrooms],
-    queryFn: () => airtableApi.getSuggestedProperties({
-      areasOfInterest: customerData?.areasOfInterest,
-      minPrice: customerData?.minPrice,
-      maxPrice: customerData?.maxPrice,
-      bedrooms: customerData?.bedrooms,
-      limit: 10,
-    }),
-    enabled: !!customerData?.areasOfInterest,
+  // Fetch linked properties from customer's Properties field
+  const { data: linkedProperties, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['customer-properties', customerData?.propertyIds],
+    queryFn: () => airtableApi.getProperties(customerData?.propertyIds || []),
+    enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
   });
 
   const { data: salespeople } = useQuery({
@@ -73,7 +67,7 @@ const CustomerView = () => {
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   
-  const recentProperties = suggestedProperties?.filter(property => {
+  const recentProperties = linkedProperties?.filter(property => {
     if (!property.createdTime) return false;
     const propertyCreatedDate = new Date(property.createdTime);
     return propertyCreatedDate >= threeMonthsAgo;
@@ -610,15 +604,15 @@ const CustomerView = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {!customerData.areasOfInterest ? (
+                {!customerData.propertyIds || customerData.propertyIds.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    No areas of interest set for this customer
+                    No properties linked to this customer
                   </div>
                 ) : isLoadingProperties ? (
                   <div className="text-sm text-muted-foreground">Loading properties...</div>
                 ) : !displayProperties || displayProperties.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    No matching properties found in {customerData.areasOfInterest}
+                    No recent properties (last 3 months) linked to this customer
                   </div>
                 ) : (
                   <div className="space-y-2">
