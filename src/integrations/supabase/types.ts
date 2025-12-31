@@ -75,7 +75,7 @@ export type Database = {
         Returns: boolean
       }
       list_salespeople: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           first_name: string
           last_name: string
