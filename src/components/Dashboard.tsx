@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "./Navigation";
 import AddClientForm from "./AddClientForm";
 import ClientSavedOverlay from "./ClientSavedOverlay";
-import NewPropertiesCard from "./NewPropertiesCard";
+
 import ActionRequiredCard from "./ActionRequiredCard";
 import AddCustomerCard from "./AddCustomerCard";
 import { airtableApi } from "@/services/airtableApi";
@@ -92,7 +92,6 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - 70% */}
           <div className="lg:col-span-2 space-y-6">
-            <NewPropertiesCard />
             <ActionRequiredCard />
           </div>
 
