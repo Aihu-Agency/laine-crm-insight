@@ -47,10 +47,17 @@ const CustomerView = () => {
   const previousCustomerId = hasPrevious ? customersList[currentIndex - 1]?.id : null;
   const nextCustomerId = hasNext ? customersList[currentIndex + 1]?.id : null;
 
-  const { data: properties, isLoading: isLoadingProperties } = useQuery({
-    queryKey: ['properties', customerData?.propertyIds],
-    queryFn: () => airtableApi.getProperties(customerData?.propertyIds || []),
-    enabled: !!customerData?.propertyIds && customerData.propertyIds.length > 0,
+  // Fetch suggested properties based on customer preferences (areas of interest, price, bedrooms)
+  const { data: suggestedProperties, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['suggested-properties', customerData?.areasOfInterest, customerData?.minPrice, customerData?.maxPrice, customerData?.bedrooms],
+    queryFn: () => airtableApi.getSuggestedProperties({
+      areasOfInterest: customerData?.areasOfInterest,
+      minPrice: customerData?.minPrice,
+      maxPrice: customerData?.maxPrice,
+      bedrooms: customerData?.bedrooms,
+      limit: 10,
+    }),
+    enabled: !!customerData?.areasOfInterest,
   });
 
   const { data: salespeople } = useQuery({
@@ -66,16 +73,14 @@ const CustomerView = () => {
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   
-  const recentProperties = properties?.filter(property => {
+  const recentProperties = suggestedProperties?.filter(property => {
     if (!property.createdTime) return false;
     const propertyCreatedDate = new Date(property.createdTime);
     return propertyCreatedDate >= threeMonthsAgo;
   });
 
-  // Limit to 2 properties for customer number 1002 (Mikko Tuominen), show all for others
-  const displayProperties = customerData?.customerNumber === 1002 
-    ? recentProperties?.slice(0, 2) 
-    : recentProperties;
+  // Limit display to first 5 properties
+  const displayProperties = recentProperties?.slice(0, 5);
 
   const updateCustomerMutation = useMutation({
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
@@ -597,18 +602,24 @@ const CustomerView = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   Suggested properties
-                  {customerData.propertyIds && customerData.propertyIds.length > 0 && (
+                  {displayProperties && displayProperties.length > 0 && (
                     <Badge variant="secondary" className="text-xs">
-                      {customerData.propertyIds.length}
+                      {displayProperties.length}
                     </Badge>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoadingProperties ? (
+                {!customerData.areasOfInterest ? (
+                  <div className="text-sm text-muted-foreground">
+                    No areas of interest set for this customer
+                  </div>
+                ) : isLoadingProperties ? (
                   <div className="text-sm text-muted-foreground">Loading properties...</div>
                 ) : !displayProperties || displayProperties.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No properties matched yet</div>
+                  <div className="text-sm text-muted-foreground">
+                    No matching properties found in {customerData.areasOfInterest}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {displayProperties.map((property) => (
@@ -616,14 +627,17 @@ const CustomerView = () => {
                         {/* Title and Property Type */}
                         <div className="mb-2">
                           <h4 className="font-semibold text-base">{property.title || 'Untitled Property'}</h4>
-                          <p className="text-xs text-muted-foreground">{property.propertyType || 'Type not specified'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {property.propertyType || 'Type not specified'}
+                            {property.location && ` • ${property.location}`}
+                          </p>
                         </div>
 
                         {/* Price */}
                         <div className="mb-2">
                           <span className="text-xs text-muted-foreground">Price: </span>
                           <span className="font-bold text-green-600">
-                            {property.price ? `${property.price.toLocaleString()}` : 'Price not set'}
+                            {property.price ? `€${property.price.toLocaleString()}` : 'Price not set'}
                           </span>
                         </div>
                         

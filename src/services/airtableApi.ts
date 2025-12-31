@@ -505,6 +505,79 @@ class AirtableApiService {
       return null
     }
   }
+
+  // Get suggested properties based on customer preferences (areas of interest)
+  async getSuggestedProperties(options: {
+    areasOfInterest?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    bedrooms?: number;
+    limit?: number;
+  }): Promise<Property[]> {
+    try {
+      const { areasOfInterest, minPrice, maxPrice, bedrooms, limit = 10 } = options;
+      
+      // If no areas of interest, return empty array
+      if (!areasOfInterest || areasOfInterest.trim() === '') {
+        console.log('[getSuggestedProperties] No areas of interest provided, returning empty');
+        return [];
+      }
+
+      // Parse the areas of interest (comma-separated string)
+      const areas = areasOfInterest.split(',').map(a => a.trim()).filter(Boolean);
+      
+      if (areas.length === 0) {
+        return [];
+      }
+
+      // Build filter formula to search in Areas field or Location field
+      // Using SEARCH to check if any of the customer's areas appear in the property's location/areas
+      const areaFilters = areas.map(area => 
+        `OR(SEARCH(LOWER("${area}"), LOWER(ARRAYJOIN({Areas}, ","))) > 0, SEARCH(LOWER("${area}"), LOWER({Location})) > 0)`
+      );
+      
+      let formula = areaFilters.length === 1 
+        ? areaFilters[0] 
+        : `OR(${areaFilters.join(',')})`;
+
+      // Add price filters if provided
+      const priceFilters: string[] = [];
+      if (minPrice !== undefined && minPrice > 0) {
+        priceFilters.push(`{Price €} >= ${minPrice}`);
+      }
+      if (maxPrice !== undefined && maxPrice > 0) {
+        priceFilters.push(`{Price €} <= ${maxPrice}`);
+      }
+
+      // Add bedroom filter if provided
+      if (bedrooms !== undefined && bedrooms > 0) {
+        priceFilters.push(`{Bedrooms} >= ${bedrooms}`);
+      }
+
+      // Combine all filters with AND
+      if (priceFilters.length > 0) {
+        formula = `AND(${formula}, ${priceFilters.join(', ')})`;
+      }
+
+      console.log('[getSuggestedProperties] Filter formula:', formula);
+
+      const params = new URLSearchParams();
+      params.set('filterByFormula', formula);
+      params.set('pageSize', limit.toString());
+      // Sort by newest first
+      params.set('sort[0][field]', 'Created');
+      params.set('sort[0][direction]', 'desc');
+
+      const data: AirtablePropertiesResponse = await this.makeRequest(`/properties?${params.toString()}`);
+      
+      console.log('[getSuggestedProperties] Found', data.records.length, 'properties');
+      
+      return data.records.map(transformAirtableProperty);
+    } catch (error) {
+      console.error('Error fetching suggested properties:', error);
+      return [];
+    }
+  }
 }
 
 export const airtableApi = new AirtableApiService()
