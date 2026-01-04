@@ -7,6 +7,7 @@ Welcome to the Laine Homes CRM documentation. This guide will help you understan
 | Document | Description |
 |----------|-------------|
 | [Architecture](./ARCHITECTURE.md) | Complete system architecture, data flow, and technical overview |
+| [Automations](./AUTOMATIONS.md) | Property scraping and AI analysis automation workflows |
 
 ---
 
