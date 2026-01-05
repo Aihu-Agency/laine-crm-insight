@@ -11,6 +11,114 @@ The automation system consists of two layers:
 1. **Airtable Automations** - Simple status-setting triggers that queue records for processing
 2. **n8n Workflows** - Complex workflows that perform the actual scraping and AI analysis
 
+---
+
+## Complete Workflow Diagram
+
+```mermaid
+flowchart TB
+    subgraph Input["📥 Property URL Input"]
+        A1[New Laine Homes URL added]
+        A2[New Idealista URL added]
+    end
+
+    subgraph AirtableAutomation["⚡ Airtable Automations"]
+        B1["Set 'Laine Done' status"]
+        B2["Set 'Idealista done' status"]
+    end
+
+    subgraph n8nScraping["🔧 n8n Scraping Workflows"]
+        C1[Laine Homes Property Scrape]
+        C2[Idealista Property Scrape]
+        
+        subgraph LaineProcess["Laine Homes Process"]
+            C1a[Airtop navigates to page]
+            C1b[Extract property details]
+            C1c[Download images]
+        end
+        
+        subgraph IdealistaProcess["Idealista Process"]
+            C2a[Airtop with proxy rotation]
+            C2b{CAPTCHA detected?}
+            C2c[Handle CAPTCHA]
+            C2d[Extract property details]
+            C2e[Download images]
+        end
+    end
+
+    subgraph Storage["💾 Data Storage"]
+        D1[(Airtable Properties Table)]
+        D2[Link to matching customers]
+    end
+
+    subgraph Analysis["🤖 AI Analysis Workflows"]
+        E1{Source type?}
+        E2[Laine Homes Image Analysis]
+        E3[Idealista Image Analysis]
+        
+        subgraph AnalysisProcess["Analysis Process"]
+            F1[Click 'Lisää kuvia' / Extract all images]
+            F2[Download each image]
+            F3["Per-image analysis (GPT-4o-mini)"]
+            F4["Synthesis report (GPT-5.1)"]
+        end
+    end
+
+    subgraph Output["📤 Final Output"]
+        G1[(Properties Analysis Table)]
+        G2[Update Properties record]
+        G3[Slack notification]
+    end
+
+    %% Flow connections
+    A1 --> B1
+    A2 --> B2
+    
+    B1 -->|Webhook| C1
+    B2 -->|Webhook| C2
+    
+    C1 --> C1a --> C1b --> C1c
+    C2 --> C2a --> C2b
+    C2b -->|Yes| C2c --> C2d
+    C2b -->|No| C2d
+    C2d --> C2e
+    
+    C1c --> D1
+    C2e --> D1
+    D1 --> D2
+    
+    D2 -->|Webhook| E1
+    E1 -->|Laine Homes| E2
+    E1 -->|Idealista| E3
+    
+    E2 --> F1
+    E3 --> F1
+    F1 --> F2 --> F3 --> F4
+    
+    F4 --> G1
+    F4 --> G2
+    G2 --> G3
+
+    %% Styling
+    classDef input fill:#e1f5fe,stroke:#01579b
+    classDef automation fill:#fff3e0,stroke:#e65100
+    classDef scraping fill:#f3e5f5,stroke:#7b1fa2
+    classDef storage fill:#e8f5e9,stroke:#2e7d32
+    classDef analysis fill:#fce4ec,stroke:#c2185b
+    classDef output fill:#e0f2f1,stroke:#00695c
+    
+    class A1,A2 input
+    class B1,B2 automation
+    class C1,C2,C1a,C1b,C1c,C2a,C2b,C2c,C2d,C2e scraping
+    class D1,D2 storage
+    class E1,E2,E3,F1,F2,F3,F4 analysis
+    class G1,G2,G3 output
+```
+
+---
+
+## Simple Architecture Overview
+
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │    Airtable     │────▶│      n8n        │────▶│    Airtable     │
