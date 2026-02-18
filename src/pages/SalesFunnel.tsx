@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePersistedFilters } from "@/hooks/usePersistedFilters";
 import {
   DndContext,
   DragEndEvent,
@@ -123,12 +124,15 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const queryClient = useQueryClient();
   const [pageSize, setPageSize] = useState(25);
   const [visitedOffsets, setVisitedOffsets] = useState<(string | undefined)[]>([undefined]);
-  const [filters, setFilters] = useState<CustomerFiltersValue>({
+
+  const DEFAULT_FILTERS: CustomerFiltersValue = {
     search: "",
     location: "",
     salesperson: "__all__",
     timeOfPurchase: "",
-  });
+  };
+
+  const [filters, setFilters] = usePersistedFilters<CustomerFiltersValue>('sales-funnel-filters', DEFAULT_FILTERS);
 
   const currentOffset = visitedOffsets[visitedOffsets.length - 1];
 

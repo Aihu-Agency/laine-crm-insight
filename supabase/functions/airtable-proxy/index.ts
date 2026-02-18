@@ -194,10 +194,11 @@ serve(async (req) => {
             customerOffset = pageData.offset
           } while (customerOffset)
 
-          // Filter customers by salesperson
+          // Filter customers by salesperson (case-insensitive, trim-safe)
+          const normalizedParam = salespersonParam.trim().toLowerCase()
           const salespersonCustomers = customerRecords.filter((rec) => {
             const f = rec?.fields || {}
-            return f['Sales person'] === salespersonParam
+            return (f['Sales person'] || '').trim().toLowerCase() === normalizedParam
           })
 
           const customerIds = salespersonCustomers.map(rec => rec.id)
