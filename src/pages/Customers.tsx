@@ -1,8 +1,8 @@
-
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import CustomerFilters from "@/components/CustomerFilters";
 import CustomerList from "@/components/CustomerList";
-import { useState } from "react";
+import { usePersistedFilters } from "@/hooks/usePersistedFilters";
 import { useQuery } from "@tanstack/react-query";
 import { CustomerFiltersValue } from "@/types/filters";
 import { Link } from "react-router-dom";
@@ -12,15 +12,17 @@ interface CustomersProps {
   onLogout?: () => void;
 }
 
+const DEFAULT_FILTERS: CustomerFiltersValue = { search: "", location: "", salesperson: "__all__", timeOfPurchase: "" };
+
 const Customers = ({ onLogout }: CustomersProps) => {
-  const [filters, setFilters] = useState<CustomerFiltersValue>({ search: "", location: "", salesperson: "__all__", timeOfPurchase: "" });
+  const [filters, setFilters] = usePersistedFilters<CustomerFiltersValue>('customers-filters', DEFAULT_FILTERS);
   const [resultsCount, setResultsCount] = useState<number>(0);
   
   // Prefetch all customers for faster navigation in CustomerView
   useQuery({
     queryKey: ['customers-all-navigation'],
     queryFn: () => airtableApi.getAllCustomers(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
   
   return (
@@ -36,7 +38,7 @@ const Customers = ({ onLogout }: CustomersProps) => {
             </Link>
           </div>
           
-          <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters({ search: "", location: "", salesperson: "__all__", timeOfPurchase: "" })} />
+          <CustomerFilters value={filters} onChange={setFilters} onClear={() => setFilters(DEFAULT_FILTERS)} />
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">

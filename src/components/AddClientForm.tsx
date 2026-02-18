@@ -179,6 +179,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     mutationFn: (customerData: Partial<Customer>) => airtableApi.createCustomer(customerData),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-funnel'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-page'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-all'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-all-navigation'] });
       toast({
         title: "Success",
         description: "Customer created successfully",
@@ -206,6 +210,10 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customer'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-funnel'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-page'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-all'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-all-navigation'] });
       toast({
         title: "Success",
         description: "Customer updated successfully",
