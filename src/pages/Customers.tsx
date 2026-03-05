@@ -12,7 +12,7 @@ interface CustomersProps {
   onLogout?: () => void;
 }
 
-const DEFAULT_FILTERS: CustomerFiltersValue = { search: "", location: "", salesperson: "__all__", timeOfPurchase: "" };
+const DEFAULT_FILTERS: CustomerFiltersValue = { search: "", location: [], salesperson: "__all__", timeOfPurchase: "" };
 
 const Customers = ({ onLogout }: CustomersProps) => {
   const [filters, setFilters] = usePersistedFilters<CustomerFiltersValue>('customers-filters', DEFAULT_FILTERS);

@@ -137,16 +137,18 @@ class AirtableApiService {
         })(),
         'Type of apartment': customerData.propertyType,
         'Bedrooms': (() => {
-          const b: any = (customerData as any).bedrooms
-          if (b === undefined || b === null) return undefined
-          const str = typeof b === 'number' ? (b >= 4 ? '4+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
-          return [str]
+          const b: any = (customerData as any).bedrooms;
+          if (!b) return undefined;
+          if (Array.isArray(b) && b.length) return b;
+          if (typeof b === 'number') return [b >= 4 ? '4+' : String(b)];
+          return [String(b)];
         })(),
         'Bathrooms': (() => {
-          const b: any = (customerData as any).bathrooms
-          if (b === undefined || b === null) return undefined
-          const str = typeof b === 'number' ? (b >= 3 ? '3+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
-          return [str]
+          const b: any = (customerData as any).bathrooms;
+          if (!b) return undefined;
+          if (Array.isArray(b) && b.length) return b;
+          if (typeof b === 'number') return [b >= 3 ? '3+' : String(b)];
+          return [String(b)];
         })(),
         'Notes': customerData.notes,
         'Customer number': nextCustomerNumber,
@@ -279,16 +281,18 @@ class AirtableApiService {
         })(),
         'Type of apartment': customerData.propertyType,
         'Bedrooms': (() => {
-          const b: any = (customerData as any).bedrooms
-          if (b === undefined || b === null) return undefined
-          const str = typeof b === 'number' ? (b >= 4 ? '4+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
-          return [str]
+          const b: any = (customerData as any).bedrooms;
+          if (!b) return undefined;
+          if (Array.isArray(b) && b.length) return b;
+          if (typeof b === 'number') return [b >= 4 ? '4+' : String(b)];
+          return [String(b)];
         })(),
         'Bathrooms': (() => {
-          const b: any = (customerData as any).bathrooms
-          if (b === undefined || b === null) return undefined
-          const str = typeof b === 'number' ? (b >= 3 ? '3+' : String(b)) : (String(b).includes('+') ? String(b) : String(b))
-          return [str]
+          const b: any = (customerData as any).bathrooms;
+          if (!b) return undefined;
+          if (Array.isArray(b) && b.length) return b;
+          if (typeof b === 'number') return [b >= 3 ? '3+' : String(b)];
+          return [String(b)];
         })(),
         'Notes': customerData.notes,
         'Customer number': customerData.customerNumber,

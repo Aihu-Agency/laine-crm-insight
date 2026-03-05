@@ -17,12 +17,8 @@ const ActionRequiredCard = () => {
   const [showEveryone, setShowEveryone] = useState(false);
   const [limit, setLimit] = useState(10);
   const [userFullName, setUserFullName] = useState<string | null>(null);
-  const [userFirstName, setUserFirstName] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
-
-  const normalizeName = (s?: string | null) =>
-    (s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   // Load user profile information (parallelized for speed)
   useEffect(() => {
@@ -31,13 +27,11 @@ const ActionRequiredCard = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setUserFullName(null);
-          setUserFirstName(null);
           setIsAdmin(false);
           setProfileLoading(false);
           return;
         }
 
-        // Parallelize all profile data fetching
         const [adminCheck, profileData] = await Promise.all([
           supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }),
           supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single()
@@ -49,13 +43,11 @@ const ActionRequiredCard = () => {
           const first = profileData.data.first_name || null;
           const last = profileData.data.last_name || null;
           const full = `${first || ''} ${last || ''}`.trim() || null;
-          setUserFirstName(first);
           setUserFullName(full);
         } else {
           const metaFirst = (user.user_metadata?.first_name as string) || null;
           const metaLast = (user.user_metadata?.last_name as string) || null;
           const fullMeta = `${metaFirst || ''} ${metaLast || ''}`.trim() || null;
-          setUserFirstName(metaFirst);
           setUserFullName(fullMeta);
         }
       } catch (error) {
@@ -67,31 +59,22 @@ const ActionRequiredCard = () => {
     loadProfile();
   }, []);
 
-  // Use server-side filtering when not showing everyone and not admin
+  // Determine query mode
   const shouldUseServerFiltering = !showEveryone && !isAdmin && userFullName;
-  
-  const { data: customers = [], isLoading: customersLoading } = useQuery({
-    queryKey: ['customers-all'],
-    queryFn: () => airtableApi.getAllCustomers(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
-    queryKey: ['pending-actions', userFullName, shouldUseServerFiltering],
+    queryKey: ['pending-actions', userFullName, shouldUseServerFiltering, showEveryone],
     queryFn: async () => {
       if (shouldUseServerFiltering && userFullName) {
-        // Use server-side filtering for better performance
         return airtableApi.getPendingActionsBySalesperson(userFullName);
       }
       return airtableApi.getAllPendingActions();
     },
-    enabled: !profileLoading, // Wait for profile to load before fetching
+    enabled: !profileLoading,
   });
 
-  const isLoading = customersLoading || actionsLoading || profileLoading;
-
-  // Don't show data until user profile is loaded to prevent flashing
-  const isDataReady = !profileLoading && !actionsLoading && (userFullName !== null || userFirstName !== null || isAdmin);
+  const isLoading = actionsLoading || profileLoading;
+  const isDataReady = !profileLoading && !actionsLoading;
 
   // Group pending actions by customer ID and get the earliest action for each customer
   const customerActionMap = new Map<string, CustomerAction>();
@@ -105,42 +88,21 @@ const ActionRequiredCard = () => {
     }
   });
 
-  // Create customer data with their earliest pending action
-  const customersWithActions = Array.from(customerActionMap.entries())
-    .map(([customerId, action]) => {
-      const customer = customers.find(c => c.id === customerId);
-      // Filter out archived customers
-      return customer && !customer.archived ? { customer, action } : null;
-    })
-    .filter(Boolean) as Array<{ customer: any; action: CustomerAction }>;
+  // Build display list from enriched action data (no separate customer fetch needed for server-filtered)
+  const actionsWithDisplay = Array.from(customerActionMap.entries())
+    .map(([customerId, action]) => ({
+      customerId,
+      action,
+      displayName: action.customerName || customerId,
+      salesperson: action.customerSalesperson || '',
+    }))
+    .sort((a, b) => {
+      const da = new Date(a.action.actionDate);
+      const db = new Date(b.action.actionDate);
+      return da.getTime() - db.getTime();
+    });
 
-  // Filter and sort actions
-  // When using server-side filtering, actions are already filtered by salesperson
-  const filteredSorted = shouldUseServerFiltering
-    ? customersWithActions.sort((a, b) => {
-        const da = new Date(a.action.actionDate);
-        const db = new Date(b.action.actionDate);
-        return da.getTime() - db.getTime();
-      })
-    : customersWithActions
-        .filter(({ customer }) => {
-          // Admins can see all or filter by showEveryone toggle
-          // Non-admins only see their own tasks
-          if (isAdmin && showEveryone) return true;
-          const sp = normalizeName(customer.salesperson);
-          const hasName = !!userFullName || !!userFirstName;
-          if (!hasName) return true;
-          const full = normalizeName(userFullName);
-          const first = normalizeName(userFirstName);
-          return sp === full || sp === first;
-        })
-        .sort((a, b) => {
-          const da = new Date(a.action.actionDate);
-          const db = new Date(b.action.actionDate);
-          return da.getTime() - db.getTime();
-        });
-
-  const visible = filteredSorted.slice(0, limit);
+  const visible = actionsWithDisplay.slice(0, limit);
 
   const handleShowMore = () => {
     setLimit((l) => l + 20);
@@ -199,26 +161,26 @@ const ActionRequiredCard = () => {
           <div className="text-sm text-muted-foreground">No upcoming tasks</div>
         ) : (
           <div className="space-y-3">
-            {visible.map(({ customer, action }) => (
+            {visible.map(({ customerId, action, displayName, salesperson }) => (
               <div
-                key={customer.id}
+                key={customerId}
                 className="flex justify-between items-center py-3 px-4 rounded-lg transition-colors hover:bg-accent group"
               >
                 <div 
                   className="flex items-center gap-2 flex-1 cursor-pointer"
-                  onClick={() => handleCustomerClick(customer.id)}
+                  onClick={() => handleCustomerClick(customerId)}
                 >
-                  <span className="font-medium">{`${customer.firstName} ${customer.lastName}`.trim()}</span>
-                  {customer.salesperson && (
+                  <span className="font-medium">{displayName}</span>
+                  {salesperson && (
                     <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded-md">
-                      {customer.salesperson}
+                      {salesperson}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span 
                     className="text-sm text-muted-foreground cursor-pointer"
-                    onClick={() => handleCustomerClick(customer.id)}
+                    onClick={() => handleCustomerClick(customerId)}
                   >
                     {action.actionDescription ? `${action.actionDescription} • ` : ""}
                     {action.actionDate ? new Date(action.actionDate).toLocaleDateString() : ""}
@@ -238,7 +200,7 @@ const ActionRequiredCard = () => {
             ))}
           </div>
         )}
-        {filteredSorted.length > limit && (
+        {actionsWithDisplay.length > limit && (
           <div className="mt-4 text-center">
             <Button 
               variant="outline"
@@ -249,8 +211,8 @@ const ActionRequiredCard = () => {
           </div>
         )}
       </CardContent>
-      </Card>
-    );
+    </Card>
+  );
 };
 
 export default ActionRequiredCard;

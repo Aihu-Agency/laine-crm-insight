@@ -22,8 +22,13 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
     if (filters.search) {
       conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First name})), FIND(LOWER("${filters.search}"), LOWER({Last name})))`);
     }
-    if (filters.location) {
-      conditions.push(`FIND("${filters.location}", {Areas of interest})`);
+    if (filters.location.length > 0) {
+      if (filters.location.length === 1) {
+        conditions.push(`FIND("${filters.location[0]}", ARRAYJOIN({Areas of interest}, ","))`);
+      } else {
+        const locConditions = filters.location.map(loc => `FIND("${loc}", ARRAYJOIN({Areas of interest}, ","))`);
+        conditions.push(`OR(${locConditions.join(", ")})`);
+      }
     }
     if (filters.salesperson && filters.salesperson !== "__all__") {
       conditions.push(`{Sales person} = "${filters.salesperson}"`);
@@ -74,7 +79,7 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
   // Reset to first page when filters change
   useEffect(() => {
     setVisitedOffsets([undefined]);
-  }, [filters.search, filters.location, filters.salesperson, filters.timeOfPurchase]);
+  }, [filters.search, JSON.stringify(filters.location), filters.salesperson, filters.timeOfPurchase]);
 
   const handlePreviousPage = () => {
     if (visitedOffsets.length > 1) {

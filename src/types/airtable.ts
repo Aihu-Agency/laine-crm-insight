@@ -150,6 +150,8 @@ export interface CustomerAction {
   actionDescription: string
   completed: boolean
   actionDate: string
+  customerName?: string
+  customerSalesperson?: string
   createdTime: string
 }
 
@@ -162,6 +164,8 @@ export const transformAirtableCustomerAction = (record: AirtableCustomerAction):
   actionDescription: record.fields['Action Description'] || '',
   completed: record.fields['Completed'] === 'Done',
   actionDate: record.fields['Action Date'] || '',
+  customerName: (record.fields as any)['_customerName'] || undefined,
+  customerSalesperson: (record.fields as any)['_customerSalesperson'] || undefined,
   createdTime: record.createdTime
 })
 
