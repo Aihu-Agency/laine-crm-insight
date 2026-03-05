@@ -1,72 +1,76 @@
 
-# Fix: Three Reported Issues
 
-## Summary of Bugs Found
+# Fix Plan: Multi-select Filters, Bedrooms/Bathrooms, and Dashboard Performance
 
-Three separate bugs have been identified through code analysis:
+## Issues from tester feedback
 
----
-
-## Bug 1: New customers not appearing in Funnel or Customer List
-
-**Root Cause:** In `AddClientForm.tsx`, after successfully creating or updating a customer, the code invalidates the React Query cache key `['customers']`. However, the Sales Funnel uses the key `['customers-funnel']`, the Customer List uses `['customers-page']`, and the Tasks card uses `['customers-all']`. None of these match, so those views never refresh their data after a save.
-
-**Fix:** Update the `onSuccess` handlers in `AddClientForm.tsx` to also invalidate `['customers-funnel']`, `['customers-page']`, `['customers-all']`, and `['customers-all-navigation']`.
+1. **Funnel location filter should be multi-select** — currently a single-select dropdown
+2. **Bedrooms should be multi-select, bathrooms should use "1+, 2+, 3+" format** — currently both are single-select in AddClientForm
+3. **Funnel visibility still intermittent** — the `buildFilterFormula` for location uses exact `FIND` on a single value; needs to handle multiple selected locations
+4. **Dashboard task list loads very slowly** — `ActionRequiredCard` fetches ALL customers via `getAllCustomers()` (paginating through 1800+ records from Airtable) AND all pending actions, then joins them client-side. The `getAllCustomers` call alone requires ~18 paginated API requests
 
 ---
 
-## Bug 2: Filter state lost when navigating back from a customer
+## Changes
 
-**Root Cause:** The `filters` state in `SalesFunnel.tsx` and `Customers.tsx` is stored in React component state (`useState`). When a user clicks into a customer (`/customers/:id`) and uses the browser back button or the back arrow, React Router unmounts the page component and remounts it fresh, resetting `useState` to its initial values (no filter). The filters are lost every time.
+### 1. Multi-select Location filter
 
-**Fix:** Persist filter state in `sessionStorage`. When the component mounts, it will read any previously saved filters from `sessionStorage` and restore them. When filters change, they will be saved. This is transparent to the user — filters will survive navigation and be cleared only when the user explicitly clicks "Clear filters".
+**Files:** `src/types/filters.ts`, `src/components/CustomerFilters.tsx`, `src/components/CustomerList.tsx`, `src/pages/SalesFunnel.tsx`
 
-This will be implemented as a small reusable custom hook (`usePersistedFilters`) to keep both pages clean and consistent.
+- Change `location: string` to `location: string[]` in `CustomerFiltersValue`
+- Replace the single-select Location dropdown in `CustomerFilters` with a multi-select popover (checkbox list, same pattern used for Source of Contact in AddClientForm)
+- Update `buildFilterFormula()` in both `CustomerList.tsx` and `SalesFunnel.tsx` to generate an `OR(FIND(...), FIND(...))` formula when multiple locations are selected
+- Update `handleClearFilters` to reset location to `[]`
+
+### 2. Bedrooms multi-select + Bathrooms "1+, 2+, 3+" format
+
+**File:** `src/components/AddClientForm.tsx`
+
+- **Bedrooms**: Change from single `Select` to a checkbox group (multi-select). Change state from `number | undefined` to `string[]`. Update Airtable field mapping to pass the array directly (Airtable `Bedrooms` field already accepts `string[]` like `['1', '2', '4+']`)
+- **Bathrooms**: Change options from `['1', '2', '3+']` to `['1+', '2+', '3+']`. Change state from `number | undefined` to `string[]`. Update Airtable field mapping similarly
+- Update `handleSubmit` to pass arrays instead of single values
+- Update `airtableApi.ts` create/update methods: remove the wrapping logic that converts numbers to `[str]` — pass arrays directly
+
+### 3. Dashboard task list performance
+
+**File:** `src/components/ActionRequiredCard.tsx`
+
+The root cause is two expensive queries running in parallel:
+- `getAllCustomers()` — fetches ALL 1800+ customers (18+ Airtable API calls)
+- `getAllPendingActions()` or `getPendingActionsBySalesperson()` — fetches all actions
+
+The `getAllCustomers` call is only used to look up customer names for display. But the server-side `getPendingActionsBySalesperson` already returns actions linked to the right customers.
+
+**Fix approach:**
+- Remove the `getAllCustomers` query from `ActionRequiredCard`
+- Modify the edge function's salesperson-filtered response to include customer name data (first name, last name, salesperson) inline in each action record, so the frontend doesn't need a second round-trip
+- In the edge function, after filtering actions by salesperson's customer IDs, enrich each action record with customer name from the already-fetched customer records
+- On the frontend, use the enriched data directly instead of joining against a full customer list
+
+**Files:** `supabase/functions/airtable-proxy/index.ts`, `src/components/ActionRequiredCard.tsx`, `src/services/airtableApi.ts`, `src/types/airtable.ts`
+
+- Edge function: After filtering actions, attach `_customerName` and `_salesperson` to each action's fields from the customer records already in memory
+- Add `customerName` and `customerSalesperson` to `CustomerAction` type
+- Update `transformAirtableCustomerAction` to read these enriched fields
+- Simplify `ActionRequiredCard` to use action data directly without the customer lookup query
+
+### 4. Funnel visibility fix
+
+The current Airtable `FIND` filter for location does an exact substring match which can miss records. With multi-select locations, the formula will use `OR(FIND("loc1", ...), FIND("loc2", ...))` which is more robust. This combined with the filter persistence fix from the previous round should resolve the intermittent visibility issue.
 
 ---
 
-## Bug 3: Tasks not appearing on Tommi's dashboard
+## Files to modify
 
-**Root Cause:** In `ActionRequiredCard.tsx` (and `Todo.tsx`), the logic for filtering tasks by salesperson compares the user's full name from the Supabase `profiles` table against the `Sales person` field stored in Airtable. If there is any case mismatch, accent difference, or spelling difference between the two (e.g., "Tommi Tuominen" in profiles vs a slightly different format in Airtable), the name comparison fails silently and no tasks appear.
+| File | Change |
+|------|--------|
+| `src/types/filters.ts` | `location: string` → `location: string[]` |
+| `src/components/CustomerFilters.tsx` | Replace location Select with multi-select checkbox popover |
+| `src/components/CustomerList.tsx` | Update `buildFilterFormula` for array locations |
+| `src/pages/SalesFunnel.tsx` | Update `buildFilterFormula` for array locations, update default filters |
+| `src/components/AddClientForm.tsx` | Bedrooms → multi-select checkboxes, Bathrooms → "1+/2+/3+" checkboxes |
+| `src/services/airtableApi.ts` | Simplify bedrooms/bathrooms mapping to pass arrays directly |
+| `src/types/airtable.ts` | Add enriched fields to CustomerAction |
+| `src/components/ActionRequiredCard.tsx` | Remove `getAllCustomers` query, use enriched action data |
+| `supabase/functions/airtable-proxy/index.ts` | Enrich action records with customer name data |
 
-The current server-side filtering path sends the full name to the edge function, which does an **exact string match** (`f['Sales person'] === salespersonParam`). Any difference — even a single space — causes 0 results.
-
-**Fix:** Make the name matching case-insensitive and trim-safe in the edge function (`airtable-proxy/index.ts`). Change the comparison from strict `===` to a normalized comparison (lowercase + trim on both sides). Also add a fallback: if the server-side filter returns 0 results, also include the result from a first-name-only match so that a salesperson like "Tommi" will still see their tasks even if there is a minor name discrepancy.
-
----
-
-## Files to Change
-
-### 1. `src/components/AddClientForm.tsx`
-- In `createCustomerMutation.onSuccess`: add invalidation for `['customers-funnel']`, `['customers-page']`, `['customers-all']`, `['customers-all-navigation']`
-- In `updateCustomerMutation.onSuccess`: same additional invalidations
-
-### 2. `src/hooks/usePersistedFilters.ts` (new file)
-- A small custom hook that wraps `useState` with `sessionStorage` read/write
-- Takes a storage key and default value, returns `[value, setValue]`
-
-### 3. `src/pages/SalesFunnel.tsx`
-- Replace the `filters` useState with `usePersistedFilters('sales-funnel-filters', defaultFilters)`
-- No other logic changes needed
-
-### 4. `src/pages/Customers.tsx`
-- Replace the `filters` useState with `usePersistedFilters('customers-filters', defaultFilters)`
-
-### 5. `supabase/functions/airtable-proxy/index.ts`
-- In the salesperson filtering section (line ~198), change the exact match to a case-insensitive, trimmed comparison:
-  ```
-  // Before
-  return f['Sales person'] === salespersonParam
-  // After  
-  return (f['Sales person'] || '').trim().toLowerCase() === salespersonParam.trim().toLowerCase()
-  ```
-- This fixes the task visibility issue for any salesperson whose name has minor formatting differences between Supabase and Airtable
-
----
-
-## Technical Notes
-
-- The `usePersistedFilters` hook uses `sessionStorage` (not `localStorage`) so filters are naturally cleared when the browser tab is closed — appropriate for a CRM session context
-- The edge function fix is a server-side change and requires redeployment of `airtable-proxy`
-- No database schema changes are needed
-- No new dependencies are required
