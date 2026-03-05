@@ -127,7 +127,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
 
   const DEFAULT_FILTERS: CustomerFiltersValue = {
     search: "",
-    location: "",
+    location: [],
     salesperson: "__all__",
     timeOfPurchase: "",
   };
@@ -142,8 +142,13 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
     if (filters.search) {
       conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First name})), FIND(LOWER("${filters.search}"), LOWER({Last name})))`);
     }
-    if (filters.location) {
-      conditions.push(`FIND("${filters.location}", {Areas of interest})`);
+    if (filters.location.length > 0) {
+      if (filters.location.length === 1) {
+        conditions.push(`FIND("${filters.location[0]}", ARRAYJOIN({Areas of interest}, ","))`);
+      } else {
+        const locConditions = filters.location.map(loc => `FIND("${loc}", ARRAYJOIN({Areas of interest}, ","))`);
+        conditions.push(`OR(${locConditions.join(", ")})`);
+      }
     }
     if (filters.salesperson && filters.salesperson !== "__all__") {
       conditions.push(`{Sales person} = "${filters.salesperson}"`);
@@ -207,7 +212,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
   const handleClearFilters = () => {
     setFilters({
       search: "",
-      location: "",
+      location: [],
       salesperson: "__all__",
       timeOfPurchase: "",
     });

@@ -233,6 +233,10 @@ serve(async (req) => {
             page += 1
           } while (offset)
 
+          // Build a lookup map from customer ID to customer record
+          const customerLookup = new Map<string, any>()
+          salespersonCustomers.forEach(rec => customerLookup.set(rec.id, rec))
+
           // Filter by customer IDs and pending status
           const filtered = allRecords.filter((rec) => {
             const f = rec?.fields || {}
@@ -240,6 +244,21 @@ serve(async (req) => {
             const isForSalesperson = links.some((link: string) => customerIds.includes(link))
             const isPending = f['Completed'] !== 'Done'
             return isForSalesperson && isPending
+          })
+
+          // Enrich each action with customer name and salesperson
+          filtered.forEach((rec) => {
+            const f = rec?.fields || {}
+            const links = Array.isArray(f['Customer']) ? f['Customer'] : (Array.isArray(f['Customers']) ? f['Customers'] : [])
+            for (const link of links) {
+              const cust = customerLookup.get(link)
+              if (cust) {
+                const cf = cust.fields || {}
+                rec.fields['_customerName'] = `${cf['First name'] || ''} ${cf['Last name'] || ''}`.trim()
+                rec.fields['_customerSalesperson'] = cf['Sales person'] || ''
+                break
+              }
+            }
           })
 
           // Ensure consistent sorting by Action Date ASC (nulls last)

@@ -109,8 +109,20 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
   const [propertyTypes, setPropertyTypes] = useState<string[]>(initialData?.propertyType || []);
   const [areasOfInterestList, setAreasOfInterestList] = useState<string[]>(validatedInitialAreas);
-  const [bedrooms, setBedrooms] = useState<number | undefined>(initialData?.bedrooms);
-  const [bathrooms, setBathrooms] = useState<number | undefined>(initialData?.bathrooms);
+  const [bedroomsSelected, setBedroomsSelected] = useState<string[]>(() => {
+    if (initialData?.bedrooms !== undefined && initialData?.bedrooms !== null) {
+      const b = initialData.bedrooms;
+      return [b >= 4 ? '4+' : String(b)];
+    }
+    return [];
+  });
+  const [bathroomsSelected, setBathroomsSelected] = useState<string[]>(() => {
+    if (initialData?.bathrooms !== undefined && initialData?.bathrooms !== null) {
+      const b = initialData.bathrooms;
+      return [b >= 3 ? '3+' : String(b) + '+'];
+    }
+    return [];
+  });
   const [customerCategories, setCustomerCategories] = useState<string[]>(
     Array.isArray(initialData?.customerCategory)
       ? (initialData?.customerCategory as string[])
@@ -302,8 +314,8 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
       salesperson: formData.salesperson,
       sourceOfContact: selectedSourceOfContact,
       propertyType: propertyTypes,
-      bedrooms,
-      bathrooms,
+      bedrooms: bedroomsSelected as any,
+      bathrooms: bathroomsSelected as any,
       notes: formData.notes,
       
       nextActionNote: formData.nextActionNote,
@@ -320,7 +332,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex", "Town house", "Semi-detached"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
-  const bathroomOptions = ['1', '2', '3+'];
+  const bathroomOptions = ['1+', '2+', '3+'];
   const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
 
   return (
@@ -612,31 +624,45 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                    <Label htmlFor="bedrooms">Bedrooms</Label>
-                    <Select value={bedrooms === 4 ? '4+' : (bedrooms?.toString() || "")} onValueChange={(value) => setBedrooms(value ? (value === '4+' ? 4 : parseInt(value)) : undefined)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select bedrooms" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      <Label>Bedrooms</Label>
+                      <div className="flex flex-wrap gap-4">
                         {bedroomOptions.map((opt) => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          <div key={opt} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`bedroom-${opt}`}
+                              checked={bedroomsSelected.includes(opt)}
+                              onCheckedChange={(checked) => {
+                                setBedroomsSelected(Boolean(checked)
+                                  ? [...bedroomsSelected, opt]
+                                  : bedroomsSelected.filter(b => b !== opt)
+                                );
+                              }}
+                            />
+                            <Label htmlFor={`bedroom-${opt}`}>{opt}</Label>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Select value={bathrooms === 3 ? '3+' : (bathrooms?.toString() || "")} onValueChange={(value) => setBathrooms(value ? (value === '3+' ? 3 : parseInt(value)) : undefined)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select bathrooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bathroomOptions.map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Bathrooms</Label>
+                      <div className="flex flex-wrap gap-4">
+                        {bathroomOptions.map((opt) => (
+                          <div key={opt} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`bathroom-${opt}`}
+                              checked={bathroomsSelected.includes(opt)}
+                              onCheckedChange={(checked) => {
+                                setBathroomsSelected(Boolean(checked)
+                                  ? [...bathroomsSelected, opt]
+                                  : bathroomsSelected.filter(b => b !== opt)
+                                );
+                              }}
+                            />
+                            <Label htmlFor={`bathroom-${opt}`}>{opt}</Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 

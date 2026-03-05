@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerFiltersValue } from "@/types/filters";
@@ -12,6 +15,24 @@ interface CustomerFiltersProps {
   onChange: (next: CustomerFiltersValue) => void;
   onClear: () => void;
 }
+
+const LOCATION_OPTIONS = [
+  "Marbella",
+  "Puerto Banus",
+  "Malaga",
+  "Fuengirola",
+  "Mijas",
+  "Torremolinos",
+  "Alhaurin",
+  "Benahavís",
+  "Estepona",
+  "Mijas Costa",
+  "Nueva Andalucía",
+  "Costa del Sol other",
+  "Torrevieja",
+  "Costa Blanca other",
+  "Other",
+];
 
 const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => {
   const [salespeople, setSalespeople] = useState<string[]>([]);
@@ -34,6 +55,14 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
     })();
     return () => { isMounted = false; };
   }, []);
+
+  const handleLocationChange = (loc: string, checked: boolean) => {
+    const next = checked
+      ? [...value.location, loc]
+      : value.location.filter((l) => l !== loc);
+    onChange({ ...value, location: next });
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -49,28 +78,28 @@ const CustomerFilters = ({ value, onChange, onClear }: CustomerFiltersProps) => 
         </div>
         <div className="space-y-2">
           <Label>Location</Label>
-          <Select key={`location-${value.location ?? 'empty'}`} value={value.location || undefined} onValueChange={(v) => onChange({ ...value, location: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent className="z-50">
-              <SelectItem value="Marbella">Marbella</SelectItem>
-              <SelectItem value="Puerto Banus">Puerto Banus</SelectItem>
-              <SelectItem value="Malaga">Malaga</SelectItem>
-              <SelectItem value="Fuengirola">Fuengirola</SelectItem>
-              <SelectItem value="Mijas">Mijas</SelectItem>
-              <SelectItem value="Torremolinos">Torremolinos</SelectItem>
-              <SelectItem value="Alhaurin">Alhaurin</SelectItem>
-              <SelectItem value="Benahavís">Benahavís</SelectItem>
-              <SelectItem value="Estepona">Estepona</SelectItem>
-              <SelectItem value="Mijas Costa">Mijas Costa</SelectItem>
-              <SelectItem value="Nueva Andalucía">Nueva Andalucía</SelectItem>
-              <SelectItem value="Costa del Sol other">Costa del Sol other</SelectItem>
-              <SelectItem value="Torrevieja">Torrevieja</SelectItem>
-              <SelectItem value="Costa Blanca other">Costa Blanca other</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" role="combobox" className="w-full justify-between text-left font-normal">
+                {value.location.length ? `${value.location.length} selected` : 'Select location'}
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="start" className="w-[var(--radix-popper-anchor-width)] p-2 z-50 max-h-64 overflow-y-auto">
+              <div className="space-y-1">
+                {LOCATION_OPTIONS.map((loc) => (
+                  <div key={loc} className="flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent cursor-pointer">
+                    <Checkbox
+                      id={`loc-${loc}`}
+                      checked={value.location.includes(loc)}
+                      onCheckedChange={(checked) => handleLocationChange(loc, Boolean(checked))}
+                    />
+                    <Label htmlFor={`loc-${loc}`} className="cursor-pointer">{loc}</Label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
           <Label>Salesperson</Label>
