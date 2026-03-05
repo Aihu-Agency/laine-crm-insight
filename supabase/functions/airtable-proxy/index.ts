@@ -1,5 +1,6 @@
 // Airtable API Proxy Edge Function - Force deployment
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,6 +47,21 @@ serve(async (req) => {
   }
 
   try {
+    // --- Authentication check ---
+    const authHeader = req.headers.get('Authorization') || ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const _supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const _anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const _userClient = createClient(_supabaseUrl, _anonKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
+    const { data: _claimsData, error: _claimsError } = await _userClient.auth.getClaims(authHeader.replace('Bearer ', ''))
+    if (_claimsError || !_claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // Parse the request body to get the wrapped data structure
     let requestBody = null
     let actualMethod = req.method
@@ -79,36 +95,12 @@ serve(async (req) => {
     const AIRTABLE_API_KEY = Deno.env.get('AIRTABLE_API_KEY')
     const AIRTABLE_BASE_ID = Deno.env.get('AIRTABLE_BASE_ID')
 
-    console.log('[Airtable Proxy] Environment check:', {
-      hasApiKey: !!AIRTABLE_API_KEY,
-      hasBaseId: !!AIRTABLE_BASE_ID,
-      apiKeyLength: AIRTABLE_API_KEY?.length || 0,
-      baseIdLength: AIRTABLE_BASE_ID?.length || 0,
-      apiKeyStart: AIRTABLE_API_KEY ? AIRTABLE_API_KEY.substring(0, 8) : 'missing',
-      baseIdStart: AIRTABLE_BASE_ID ? AIRTABLE_BASE_ID.substring(0, 8) : 'missing'
-    })
-
-    console.log('[Airtable Proxy] Environment variables available:', Object.keys(Deno.env.toObject()))
-    console.log('[Airtable Proxy] Credentials check:', {
-      hasApiKey: !!AIRTABLE_API_KEY,
-      hasBaseId: !!AIRTABLE_BASE_ID,
-      apiKeyLength: AIRTABLE_API_KEY?.length || 0,
-      baseIdLength: AIRTABLE_BASE_ID?.length || 0,
-      apiKeyPrefix: AIRTABLE_API_KEY ? AIRTABLE_API_KEY.substring(0, 8) + '...' : 'none',
-      baseIdPrefix: AIRTABLE_BASE_ID ? AIRTABLE_BASE_ID.substring(0, 8) + '...' : 'none'
-    })
+    console.log('[Airtable Proxy] Credentials present:', { hasApiKey: !!AIRTABLE_API_KEY, hasBaseId: !!AIRTABLE_BASE_ID })
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-      console.error('[Airtable Proxy] Missing credentials - API Key exists:', !!AIRTABLE_API_KEY, 'Base ID exists:', !!AIRTABLE_BASE_ID)
+      console.error('[Airtable Proxy] Missing credentials')
       return new Response(
-        JSON.stringify({ 
-          error: 'Airtable credentials not configured',
-          details: {
-            hasApiKey: !!AIRTABLE_API_KEY,
-            hasBaseId: !!AIRTABLE_BASE_ID,
-            availableEnvVars: Object.keys(Deno.env.toObject())
-          }
-        }),
+        JSON.stringify({ error: 'Internal server error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -498,7 +490,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[Airtable Proxy] Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: error.message, stack: error.stack }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
