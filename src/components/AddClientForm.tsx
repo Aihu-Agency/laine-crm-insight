@@ -205,6 +205,8 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
           description: (data as any)._warnings.join(' '),
         });
       }
+      sessionStorage.removeItem('sales-funnel-filters');
+      sessionStorage.removeItem('customers-filters');
       onSave();
     },
     onError: (error) => {

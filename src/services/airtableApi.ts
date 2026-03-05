@@ -26,6 +26,8 @@ class AirtableApiService {
       if (options?.limit) params.set('pageSize', options.limit.toString());
       if (options?.offset) params.set('offset', options.offset);
       if (options?.filterFormula) params.set('filterByFormula', options.filterFormula);
+      params.set('sort[0][field]', 'Created');
+      params.set('sort[0][direction]', 'desc');
       
       const qs = params.toString();
       const endpoint = qs ? `/customers?${qs}` : '/customers';
