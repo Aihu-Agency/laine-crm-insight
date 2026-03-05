@@ -193,7 +193,7 @@ const SalesFunnel = ({ onLogout }: SalesFunnelProps) => {
       offset: currentOffset,
       filterFormula: buildFilterFormula()
     }),
-    staleTime: 60 * 1000,
+    staleTime: 0,
   });
 
   const customersData = (data?.customers || []) as Customer[];
