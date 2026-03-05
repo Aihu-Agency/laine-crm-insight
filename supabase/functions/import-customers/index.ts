@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -250,6 +251,30 @@ serve(async (req) => {
   }
 
   try {
+    // --- Admin authorization check ---
+    const authHeader = req.headers.get('Authorization') || ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+    const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    })
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(authHeader.replace('Bearer ', ''))
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const userId = claimsData.claims.sub
+
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+    const { data: isAdmin } = await adminClient.rpc('has_role', { _user_id: userId, _role: 'admin' })
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const { records, skipDuplicates = true } = await req.json()
 
     if (!records || !Array.isArray(records)) {
@@ -413,7 +438,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Import error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

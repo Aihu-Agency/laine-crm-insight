@@ -1,13 +1,13 @@
 project_id = "lgyapmkpkumydtufsmne"
 
 [functions.airtable-proxy]
-verify_jwt = true
+verify_jwt = false
 
 [functions.user-admin]
-verify_jwt = true
+verify_jwt = false
 
 [functions.import-customers]
-verify_jwt = true
+verify_jwt = false
 
 [functions.fix-phone-numbers]
-verify_jwt = true
+verify_jwt = false
