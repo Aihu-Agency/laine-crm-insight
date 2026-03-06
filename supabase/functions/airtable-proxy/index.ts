@@ -155,6 +155,80 @@ serve(async (req) => {
         const searchParams = new URLSearchParams(queryString)
         const customerIdParam = searchParams.get('customerId')
         const salespersonParam = searchParams.get('salesperson')
+        const allPendingParam = searchParams.get('allPending')
+
+        if (allPendingParam === 'true') {
+          console.log('[Airtable Proxy] Fetching all pending actions with enrichment')
+
+          // Fetch all customers for name enrichment
+          let customerRecords: any[] = []
+          let customerOffset: string | undefined = undefined
+          do {
+            let pageUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Customers?pageSize=100`
+            if (customerOffset) pageUrl += `&offset=${customerOffset}`
+            const resp = await fetch(pageUrl, { headers: airtableHeaders })
+            const pageData = await resp.json()
+            if (!resp.ok) {
+              console.error('[Airtable Proxy] Error fetching customers for enrichment:', pageData)
+              return new Response(JSON.stringify({ error: 'Internal server error' }), { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            }
+            customerRecords = customerRecords.concat(Array.isArray(pageData.records) ? pageData.records : [])
+            customerOffset = pageData.offset
+          } while (customerOffset)
+
+          // Fetch all actions
+          let allRecords: any[] = []
+          let offset: string | undefined = undefined
+          do {
+            let pageUrl = `${airtableUrl}?pageSize=100&sort[0][field]=Action%20Date&sort[0][direction]=asc`
+            if (offset) pageUrl += `&offset=${offset}`
+            const resp = await fetch(pageUrl, { headers: airtableHeaders })
+            const pageData = await resp.json()
+            if (!resp.ok) {
+              console.error('[Airtable Proxy] Error fetching actions:', pageData)
+              return new Response(JSON.stringify({ error: 'Internal server error' }), { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+            }
+            allRecords = allRecords.concat(Array.isArray(pageData.records) ? pageData.records : [])
+            offset = pageData.offset
+          } while (offset)
+
+          // Filter to pending only
+          const pending = allRecords.filter((rec) => {
+            const f = rec?.fields || {}
+            return f['Completed'] !== 'Done'
+          })
+
+          // Build customer lookup
+          const customerLookup = new Map<string, any>()
+          customerRecords.forEach(rec => customerLookup.set(rec.id, rec))
+
+          // Enrich with customer name and salesperson
+          pending.forEach((rec) => {
+            const f = rec?.fields || {}
+            const links = Array.isArray(f['Customer']) ? f['Customer'] : (Array.isArray(f['Customers']) ? f['Customers'] : [])
+            for (const link of links) {
+              const cust = customerLookup.get(link)
+              if (cust) {
+                const cf = cust.fields || {}
+                rec.fields['_customerName'] = `${cf['First name'] || ''} ${cf['Last name'] || ''}`.trim()
+                rec.fields['_customerSalesperson'] = cf['Sales person'] || ''
+                break
+              }
+            }
+          })
+
+          // Sort by Action Date ASC
+          pending.sort((a: any, b: any) => {
+            const da = a?.fields?.['Action Date'] ? Date.parse(a.fields['Action Date']) : Number.POSITIVE_INFINITY
+            const db = b?.fields?.['Action Date'] ? Date.parse(b.fields['Action Date']) : Number.POSITIVE_INFINITY
+            return da - db
+          })
+
+          console.log(`[Airtable Proxy] Returning ${pending.length} enriched pending actions`)
+          return new Response(JSON.stringify({ records: pending }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
 
         if (salespersonParam) {
           console.log('[Airtable Proxy] Server-side filtering Customer Actions by salesperson:', salespersonParam)
