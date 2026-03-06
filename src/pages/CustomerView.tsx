@@ -658,6 +658,7 @@ const CustomerView = () => {
                           <p className="text-xs text-muted-foreground">
                             {property.propertyType || 'Type not specified'}
                             {property.location && ` • ${property.location}`}
+                            {property.createdTime && ` • Added ${format(new Date(property.createdTime), 'dd.MM.yyyy')}`}
                           </p>
                         </div>
 
