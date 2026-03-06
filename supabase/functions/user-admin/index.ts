@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
           email: u.email,
           first_name: p.first_name ?? "",
           last_name: p.last_name ?? "",
-          last_login: p.last_login ?? null,
+          last_login: u.last_sign_in_at ?? p.last_login ?? null,
           is_admin: userRoles.includes("admin"),
           created_at: p.created_at ?? null,
         };
