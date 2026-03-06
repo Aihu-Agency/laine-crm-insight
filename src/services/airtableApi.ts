@@ -26,8 +26,7 @@ class AirtableApiService {
       if (options?.limit) params.set('pageSize', options.limit.toString());
       if (options?.offset) params.set('offset', options.offset);
       if (options?.filterFormula) params.set('filterByFormula', options.filterFormula);
-      params.set('sort[0][field]', 'Created');
-      params.set('sort[0][direction]', 'desc');
+      // No sort — Airtable returns records in creation order by default
       
       const qs = params.toString();
       const endpoint = qs ? `/customers?${qs}` : '/customers';
@@ -449,21 +448,11 @@ class AirtableApiService {
   // Get all pending customer actions across all customers
   async getAllPendingActions(): Promise<CustomerAction[]> {
     try {
-      let allActions: CustomerAction[] = [];
-      let offset: string | undefined;
-
-      do {
-        const params = new URLSearchParams();
-        if (offset) params.set('offset', offset);
-        
-        const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`);
-        const pageActions = data.records.map(transformAirtableCustomerAction);
-        allActions = [...allActions, ...pageActions];
-        offset = data.offset;
-      } while (offset);
-
-      // Filter to only pending actions
-      return allActions.filter(action => !action.completed);
+      const params = new URLSearchParams();
+      params.set('allPending', 'true');
+      
+      const data: AirtableCustomerActionResponse = await this.makeRequest(`/customer-actions?${params.toString()}`);
+      return data.records.map(transformAirtableCustomerAction);
     } catch (error) {
       console.error('Error fetching all pending actions:', error);
       throw error;

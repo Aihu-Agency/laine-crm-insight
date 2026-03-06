@@ -60,7 +60,7 @@ const ActionRequiredCard = () => {
   }, []);
 
   // Determine query mode
-  const shouldUseServerFiltering = !showEveryone && !isAdmin && userFullName;
+  const shouldUseServerFiltering = !showEveryone && userFullName;
 
   const { data: pendingActions = [], isLoading: actionsLoading } = useQuery({
     queryKey: ['pending-actions', userFullName, shouldUseServerFiltering, showEveryone],
