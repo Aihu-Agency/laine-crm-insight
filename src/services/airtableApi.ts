@@ -502,6 +502,15 @@ class AirtableApiService {
     }
   }
 
+  async unlinkProperty(customerId: string, propertyIdToRemove: string, currentPropertyIds: string[]): Promise<Customer> {
+    const updatedIds = currentPropertyIds.filter(pid => pid !== propertyIdToRemove);
+    const record: AirtableCustomer = await this.makeRequest(`/customers/${customerId}`, {
+      method: 'PATCH',
+      body: { 'Properties': updatedIds.length > 0 ? updatedIds : null },
+    });
+    return transformAirtableCustomer(record);
+  }
+
   // Get suggested properties based on customer preferences (areas of interest)
   async getSuggestedProperties(options: {
     areasOfInterest?: string;

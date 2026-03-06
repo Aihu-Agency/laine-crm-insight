@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon, Archive, ArchiveRestore, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, Edit, Save, X, CalendarIcon, Archive, ArchiveRestore, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,18 +63,37 @@ const CustomerView = () => {
     },
   });
 
-  // Filter properties created within last 3 months
+  // Filter properties created within last 3 months and sort newest first
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
   
-  const recentProperties = linkedProperties?.filter(property => {
-    if (!property.createdTime) return false;
-    const propertyCreatedDate = new Date(property.createdTime);
-    return propertyCreatedDate >= threeMonthsAgo;
-  });
+  const recentProperties = linkedProperties
+    ?.filter(property => {
+      if (!property.createdTime) return false;
+      const propertyCreatedDate = new Date(property.createdTime);
+      return propertyCreatedDate >= threeMonthsAgo;
+    })
+    ?.sort((a, b) => {
+      const dateA = a.createdTime ? new Date(a.createdTime).getTime() : 0;
+      const dateB = b.createdTime ? new Date(b.createdTime).getTime() : 0;
+      return dateB - dateA;
+    });
 
   // Limit display to first 5 properties
   const displayProperties = recentProperties?.slice(0, 5);
+
+  const unlinkPropertyMutation = useMutation({
+    mutationFn: ({ propertyId }: { propertyId: string }) =>
+      airtableApi.unlinkProperty(id!, propertyId, customerData?.propertyIds || []),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-properties'] });
+      toast({ title: "Property removed" });
+    },
+    onError: () => {
+      toast({ title: "Failed to remove property", variant: "destructive" });
+    },
+  });
 
   const updateCustomerMutation = useMutation({
     mutationFn: ({ customerId, data }: { customerId: string; data: Partial<Customer> }) =>
@@ -617,9 +636,24 @@ const CustomerView = () => {
                 ) : (
                   <div className="space-y-2">
                     {displayProperties.map((property) => (
-                      <div key={property.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                      <div key={property.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors relative group">
+                        {/* Delete button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            if (confirm('Remove this property from the customer?')) {
+                              unlinkPropertyMutation.mutate({ propertyId: property.id });
+                            }
+                          }}
+                          disabled={unlinkPropertyMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+
                         {/* Title and Property Type */}
-                        <div className="mb-2">
+                        <div className="mb-2 pr-8">
                           <h4 className="font-semibold text-base">{property.title || 'Untitled Property'}</h4>
                           <p className="text-xs text-muted-foreground">
                             {property.propertyType || 'Type not specified'}
