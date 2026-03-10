@@ -17,6 +17,12 @@ class AirtableApiService {
       throw new Error(`Airtable API error: ${error.message}`)
     }
 
+    // Check if the response itself contains an error (proxy returns error objects)
+    if (data && typeof data === 'object' && data.error && data.airtableError) {
+      console.error('Airtable proxy returned error:', data)
+      throw new Error(`Airtable API error: ${data.error} (status: ${data.status}) ${JSON.stringify(data.details || {})}`)
+    }
+
     return data
   }
 
@@ -207,8 +213,8 @@ class AirtableApiService {
         return transformed;
       } catch (err: any) {
         const msg = (err && (err.message || err.toString())) || '';
-        if (msg.includes('422')) {
-          // Retry without Areas of interest
+        if (msg.includes('422') || msg.includes('INVALID_MULTIPLE_CHOICE') || msg.includes('INVALID_VALUE')) {
+          // Retry without problematic multi-select fields
           const retryFields = { ...cleanFields };
           if (retryFields['Areas of interest']) {
             delete retryFields['Areas of interest'];
@@ -346,7 +352,7 @@ class AirtableApiService {
         return transformed;
       } catch (err: any) {
         const msg = (err && (err.message || err.toString())) || '';
-        if (msg.includes('422')) {
+        if (msg.includes('422') || msg.includes('INVALID_MULTIPLE_CHOICE') || msg.includes('INVALID_VALUE')) {
           const retryFields = { ...cleanFields };
           if (retryFields['Areas of interest']) {
             delete retryFields['Areas of interest'];
