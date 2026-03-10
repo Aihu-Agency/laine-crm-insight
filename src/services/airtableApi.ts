@@ -213,8 +213,8 @@ class AirtableApiService {
         return transformed;
       } catch (err: any) {
         const msg = (err && (err.message || err.toString())) || '';
-        if (msg.includes('422')) {
-          // Retry without Areas of interest
+        if (msg.includes('422') || msg.includes('INVALID_MULTIPLE_CHOICE') || msg.includes('INVALID_VALUE')) {
+          // Retry without problematic multi-select fields
           const retryFields = { ...cleanFields };
           if (retryFields['Areas of interest']) {
             delete retryFields['Areas of interest'];
