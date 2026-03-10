@@ -634,10 +634,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
                               id={`bedroom-${opt}`}
                               checked={bedroomsSelected.includes(opt)}
                               onCheckedChange={(checked) => {
-                                setBedroomsSelected(Boolean(checked)
-                                  ? [...bedroomsSelected, opt]
-                                  : bedroomsSelected.filter(b => b !== opt)
-                                );
+                                setBedroomsSelected(Boolean(checked) ? [opt] : []);
                               }}
                             />
                             <Label htmlFor={`bedroom-${opt}`}>{opt}</Label>
