@@ -119,7 +119,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const [bathroomsSelected, setBathroomsSelected] = useState<string[]>(() => {
     if (initialData?.bathrooms !== undefined && initialData?.bathrooms !== null) {
       const b = initialData.bathrooms;
-      return [b >= 3 ? '3+' : String(b) + '+'];
+      return [b >= 3 ? '3+' : String(b)];
     }
     return [];
   });
@@ -334,7 +334,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
 
   const propertyTypeOptions = ["Apartment", "House", "Penthouse", "Villa", "Duplex", "Town house", "Semi-detached"]; 
   const bedroomOptions = ['1', '2', '3', '4+'];
-  const bathroomOptions = ['1+', '2+', '3+'];
+  const bathroomOptions = ['1', '2', '3+'];
   const categoryOptions = ["Investor","Holiday home","Primary residence","New-build customer","Resale buyer","Other"];
 
   return (
