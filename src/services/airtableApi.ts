@@ -317,10 +317,16 @@ class AirtableApiService {
         mapped: { bedrooms: airtableFieldsBase['Bedrooms'], bathrooms: airtableFieldsBase['Bathrooms'], sourceOfContact: airtableFieldsBase['Source of contact'] }
       })
 
-      // Remove undefined values and empty strings
+      // Remove undefined values, empty strings, and empty arrays to avoid Airtable errors
       const cleanFields = Object.keys(airtableFieldsBase).reduce((acc: Record<string, any>, key) => {
         const value = airtableFieldsBase[key];
-        if (!(value === undefined || value === '')) acc[key] = value;
+        if (value === undefined || value === '' || value === null) return acc;
+        if (Array.isArray(value)) {
+          const filtered = value.filter((v: any) => v !== '' && v !== undefined && v !== null);
+          if (filtered.length > 0) acc[key] = filtered;
+          return acc;
+        }
+        acc[key] = value;
         return acc;
       }, {} as Record<string, any>);
 
