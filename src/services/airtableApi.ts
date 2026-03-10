@@ -79,17 +79,19 @@ class AirtableApiService {
       let nextCustomerNumber = 1001; // Default starting number
       
       try {
-        const allCustomers = await this.getAllCustomers();
-        const customerNumbers = allCustomers
-          .map(c => c.customerNumber)
-          .filter(num => num !== undefined && num !== null) as number[];
-        
-        if (customerNumbers.length > 0) {
-          nextCustomerNumber = Math.max(...customerNumbers) + 1;
+        // Fetch only the single record with the highest Customer number
+        const params = new URLSearchParams();
+        params.set('sort[0][field]', 'Customer number');
+        params.set('sort[0][direction]', 'desc');
+        params.set('pageSize', '1');
+        params.set('fields[]', 'Customer number');
+        const response = await this.makeRequest(`/Customers?${params.toString()}`);
+        const maxNum = response?.records?.[0]?.fields?.['Customer number'];
+        if (typeof maxNum === 'number') {
+          nextCustomerNumber = maxNum + 1;
         }
       } catch (error) {
-        console.warn('Could not fetch existing customers for number generation, using default:', error);
-        // nextCustomerNumber remains 1001
+        console.warn('Could not fetch max customer number, using default:', error);
       }
 
       // Normalize Areas of interest using the hierarchical tree
