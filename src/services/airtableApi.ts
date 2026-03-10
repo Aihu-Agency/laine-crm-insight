@@ -17,6 +17,12 @@ class AirtableApiService {
       throw new Error(`Airtable API error: ${error.message}`)
     }
 
+    // Check if the response itself contains an error (proxy returns error objects)
+    if (data && typeof data === 'object' && data.error && data.airtableError) {
+      console.error('Airtable proxy returned error:', data)
+      throw new Error(`Airtable API error: ${data.error} (status: ${data.status}) ${JSON.stringify(data.details || {})}`)
+    }
+
     return data
   }
 
