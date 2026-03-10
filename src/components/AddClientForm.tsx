@@ -119,7 +119,7 @@ const AddClientForm = ({ onSave, onCancel, initialData, isEditing = false }: Add
   const [bathroomsSelected, setBathroomsSelected] = useState<string[]>(() => {
     if (initialData?.bathrooms !== undefined && initialData?.bathrooms !== null) {
       const b = initialData.bathrooms;
-      return [b >= 3 ? '3+' : String(b) + '+'];
+      return [b >= 3 ? '3+' : String(b)];
     }
     return [];
   });
