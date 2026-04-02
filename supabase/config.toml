@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.fix-phone-numbers]
 verify_jwt = false
+
+[functions.import-mailchimp]
+verify_jwt = false
