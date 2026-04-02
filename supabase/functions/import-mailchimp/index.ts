@@ -56,14 +56,12 @@ function parseAreas(raw: string): string[] {
   for (const part of parts) {
     const lower = part.toLowerCase()
     if (lower.includes('costa del sol')) {
-      areas.push('Costa del Sol other')
+      areas.push('Costa del Sol')
     } else if (lower.includes('costa blanca')) {
-      areas.push('Costa Blanca other')
+      areas.push('Costa Blanca')
     } else if (lower === 'espanja' || lower === 'spain') {
-      // Generic "Spain" - skip unless nothing else matched
-      if (areas.length === 0) areas.push('Costa del Sol other')
+      if (areas.length === 0) areas.push('Costa del Sol')
     }
-    // Skip non-Spain countries like "Portugali", "Turkki", "Kroatia" etc.
   }
   return [...new Set(areas)]
 }
