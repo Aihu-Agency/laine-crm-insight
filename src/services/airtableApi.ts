@@ -14,16 +14,53 @@ class AirtableApiService {
 
     if (error) {
       console.error('Supabase function error:', error)
-      throw new Error(`Airtable API error: ${error.message}`)
+      // Try to extract Airtable's actual error from the edge function response body
+      let detail = ''
+      try {
+        const ctxRes: Response | undefined = (error as any)?.context?.response
+        if (ctxRes && typeof ctxRes.clone === 'function') {
+          const bodyText = await ctxRes.clone().text()
+          try {
+            const parsed = JSON.parse(bodyText)
+            const airtableMsg =
+              parsed?.details?.error?.message ||
+              parsed?.details?.error?.type ||
+              (typeof parsed?.details?.error === 'string' ? parsed.details.error : '') ||
+              parsed?.error ||
+              ''
+            const status = parsed?.status ? ` (status: ${parsed.status})` : ''
+            detail = airtableMsg ? `${airtableMsg}${status}` : bodyText
+          } catch {
+            detail = bodyText
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse edge function error body:', e)
+      }
+      throw new Error(detail ? `Airtable API error: ${detail}` : `Airtable API error: ${error.message}`)
     }
 
     // Check if the response itself contains an error (proxy returns error objects)
     if (data && typeof data === 'object' && data.error && data.airtableError) {
       console.error('Airtable proxy returned error:', data)
-      throw new Error(`Airtable API error: ${data.error} (status: ${data.status}) ${JSON.stringify(data.details || {})}`)
+      const airtableMsg = data?.details?.error?.message || data?.details?.error?.type || data.error
+      throw new Error(`Airtable API error: ${airtableMsg} (status: ${data.status})`)
     }
 
     return data
+  }
+
+  async toggleCustomerArchived(id: string, archived: boolean): Promise<Customer> {
+    try {
+      const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
+        method: 'PATCH',
+        body: { Archived: archived },
+      })
+      return transformAirtableCustomer(record)
+    } catch (error) {
+      console.error('Error toggling Archived field:', error)
+      throw error
+    }
   }
 
   async getCustomers(options?: { limit?: number; offset?: string; filterFormula?: string }): Promise<{ customers: Customer[]; offset?: string; hasMore: boolean }> {
