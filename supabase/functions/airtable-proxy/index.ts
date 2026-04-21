@@ -511,6 +511,11 @@ serve(async (req) => {
         // Update existing customer - use the unwrapped data
         const customerId = path.split('/')[2]
         airtableUrl += `/${customerId}`
+        console.log('[Airtable Proxy] PATCH customer', {
+          customerId,
+          fieldKeys: requestBody && typeof requestBody === 'object' ? Object.keys(requestBody) : [],
+          fields: requestBody,
+        })
         const response = await fetch(airtableUrl, {
           method: 'PATCH',
           headers: airtableHeaders,
@@ -520,7 +525,12 @@ serve(async (req) => {
         })
         const data = await response.json()
         if (!response.ok) {
-          console.error('[Airtable Proxy] Failed to update customer', data)
+          console.error('[Airtable Proxy] Failed to update customer', {
+            customerId,
+            status: response.status,
+            airtableError: data,
+            sentFields: requestBody,
+          })
           return new Response(JSON.stringify({
             error: 'Failed to update customer',
             details: data,
@@ -532,6 +542,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
+        console.log('[Airtable Proxy] PATCH customer success', { customerId, returnedFieldKeys: Object.keys(data?.fields || {}) })
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
