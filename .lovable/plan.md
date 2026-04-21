@@ -1,43 +1,71 @@
 
-## Korjaussuunnitelma: Asiakkaan arkistointi + Asuntoehdotusten poisto
+## Korjaussuunnitelma: arkistoinnin virheilmoitus
 
-### 1. Asiakkaan arkistointi (ei kovaa poistoa)
+### Todennäköinen ongelma
+Asuntoehdotusten poisto toimii, joten yleinen PATCH-polku ei ole täysin rikki. Arkistointi kulkee saman `updateCustomer`-reitin kautta, mutta juuri `Archived`-kentän päivitys näyttää kaatuvan Airtablen puolella. Lisäksi frontend näyttää nyt liian geneerisen virheen: `Edge Function returned a non-2xx status code`, joten varsinainen Airtable-syy jää piiloon.
 
-**Nykytilanne:**
-- `CustomerView`-sivulla on **Archive/Restore**-painike, joka vaihtaa Airtablen `Archived`-checkboxia.
-- Arkistoidut suodatetaan pois Customers-, Sales Funnel- ja Tasks-näkymistä.
+### Mitä korjataan
 
-**Ongelma:**
-Käyttäjä raportoi että "ei toimi". Mahdolliset syyt:
-- Painikkeen klikkaus ei päivitä UI:ta välittömästi (cache-ongelma)
-- Airtable-kutsu epäonnistuu hiljaa ilman näkyvää virheilmoitusta
-- Lista-näkymä ei refreshaa arkistointitoiminnon jälkeen
+#### 1) Tee virhesyystä näkyvä oikea tieto
+Päivitä `src/services/airtableApi.ts` niin, että `makeRequest()` purkaa myös non-2xx edge function -vastauksen rungon ja näyttää Airtablen oikean virheen eikä pelkkää geneeristä Supabase-viestiä.
 
-**Korjaukset:**
-1. Lisää näkyvä toast-ilmoitus onnistuneelle/epäonnistuneelle arkistoinnille.
-2. Invalidate React Query cache laajemmin (`['customer', id]`, `['customers-funnel']`, `['customers-page']`, `['customers-all']`, `['customers-all-navigation']`) jotta asiakas katoaa listalta heti.
-3. Navigoi takaisin asiakaslistaan onnistuneen arkistoinnin jälkeen.
-4. Lokita virheet konsoliin debuggausta varten.
+Tavoite:
+- toastiin saadaan esim. `INVALID_VALUE_FOR_COLUMN`, `cannot update field`, `permission denied` tms.
+- debuggaus helpottuu heti ilman arvaamista
 
-**Ei lisätä Delete-painiketta** — arkistointi on ainoa poistotapa, jotta asiakkaan historia ja linkitykset säilyvät.
+#### 2) Lisää tarkempi lokitus edge functioniin
+Päivitä `supabase/functions/airtable-proxy/index.ts` niin, että customer PATCH -haara loggaa:
+- customerId
+- lähetetyt kentät
+- Airtablen statuskoodi
+- Airtablen virherunko
 
-### 2. Asuntoehdotusten poisto — vain UI-tekstien selvennys
+Tavoite:
+- nähdään varmasti hylkääkö Airtable juuri `Archived`-kentän
+- varmistetaan onko kyse kentän nimestä, kenttätyypistä tai Airtable-oikeuksista
 
-**Nykytilanne:**
-- Roskakori-painike ehdotuslistassa **ei poista** Property-tietuetta Airtablesta — se vain poistaa property ID:n asiakkaan `Properties`-linkkikentästä (unlink).
+#### 3) Tee arkistoinnista oma suojattu polku
+Päivitä `src/services/airtableApi.ts` lisäämällä erillinen metodi tyyliin `toggleCustomerArchived(id, archived)`.
 
-**Tuleeko uusia tilalle?**
-Kyllä — n8n-scraperit (Laine Homes + Idealista) luovat uusia Property-tietueita ja linkittävät ne automaattisesti sopiviin asiakkaisiin areas of interest + active search date -matchillä. Sama asunto ei palaa unlinkkauksen jälkeen, mutta uusia eri asuntoja tulee scraperien löytäessä niitä.
+Tässä metodissa:
+- lähetetään vain `{ Archived: true/false }`
+- ei lähetetä mitään muita customer-kenttiä samalla
+- jos Airtable palauttaa virheen, se heitetään eteenpäin mahdollisimman sellaisenaan
 
-**UI-selvennykset:**
-1. Vaihda hover-tooltip roskakori-napissa: "Poista ehdotus tältä asiakkaalta (asunto säilyy tietokannassa)".
-2. Päivitä confirm-dialogin teksti: "Poistetaanko tämä asunto asiakkaan ehdotuksista? Asunto säilyy järjestelmässä, ei näy enää tällä asiakkaalla. Uusia ehdotuksia tulee automaattisesti kun n8n-scraper löytää uusia kohteita."
+Tavoite:
+- rajataan ongelma vain yhteen kenttään
+- vältetään sivuvaikutukset yleisestä `updateCustomer()`-mappingista
 
-### 3. Yhteenveto Tommille
+#### 4) Kytke CustomerView käyttämään erillistä arkistointimetodia
+Päivitä `src/pages/CustomerView.tsx`:
+- `handleArchiveToggle()` käyttää uutta dedikoitua arkistointimetodia
+- säilytä jo lisätyt cache-invalidoinnit
+- säilytä toastit ja navigointi takaisin listaan onnistumisessa
+- virhetoast näyttää käyttäjälle oikean syyn siistityssä muodossa
+- `console.error` jätetään talteen debuggausta varten
 
-- **Arkistointi** → korjataan toast + cache-invalidointi + auto-navigaatio listalle.
-- **Ehdotusten roskakori** → unlinkkaa vain (ei poista tietuetta). Sama asunto ei palaa, mutta uusia kohteita tulee automaattisesti scraperin kautta. UI-tekstit selvennetään.
+#### 5) Lisää fallback käyttäjäystävälliseen virhetekstiin
+Jos Airtable palauttaa edelleen epäselvän virheen, näytä toastissa:
+- otsikko: `Arkistointi epäonnistui`
+- kuvaus: `Airtable hylkäsi Archived-kentän päivityksen. Tarkistan kentän oikeudet / asetukset.`
+
+Tavoite:
+- Tommi ei näe enää epämääräistä “non-2xx status code” -tekstiä
+
+### Todennäköisin juurisyy, joka varmistetaan toteutuksessa
+Näkyvän koodin perusteella todennäköisimmät vaihtoehdot ovat:
+1. Airtablen `Archived`-kenttä ei hyväksy PATCHia odotetussa muodossa
+2. kentän nimi/tyyppi ei vastaa oletusta
+3. Airtable-tokenilla ei ole oikeutta päivittää kyseistä kenttää
+4. edge function palauttaa kyllä tarkemman virheen, mutta frontend hukkaa sen
 
 ### Muutettavat tiedostot
+- `src/services/airtableApi.ts` — parempi virhepurku + erillinen arkistointimetodi
+- `src/pages/CustomerView.tsx` — käytä dedikoitua arkistointimetodia, pidä nykyinen UX
+- `supabase/functions/airtable-proxy/index.ts` — tarkempi PATCH-lokitus ja virheen välitys
 
-- `src/pages/CustomerView.tsx` — toast-ilmoitukset arkistoinnille, parempi cache-invalidointi, auto-navigaatio, selvennä unlink-confirm-teksti ja tooltip.
+### Lopputulos
+Kun tämä tehdään:
+- arkistointi joko toimii oikein
+- tai jos Airtable estää sen, toast kertoo oikean syyn eikä geneeristä edge function -virhettä
+- samalla jää pysyvämpi, helpommin debuggattava toteutus arkistoinnille
