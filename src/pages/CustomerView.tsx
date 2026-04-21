@@ -212,10 +212,32 @@ const CustomerView = () => {
 
   const handleArchiveToggle = () => {
     const newArchivedStatus = !customerData.archived;
-    updateCustomerMutation.mutate({
-      customerId: id!,
-      data: { archived: newArchivedStatus }
-    });
+    airtableApi.updateCustomer(id!, { archived: newArchivedStatus })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['customer', id] });
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-funnel'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-page'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-all'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-all-navigation'] });
+        toast({
+          title: newArchivedStatus ? "Asiakas arkistoitu" : "Arkistointi peruttu",
+          description: newArchivedStatus
+            ? "Asiakas on piilotettu listoilta. Voit palauttaa hänet milloin tahansa."
+            : "Asiakas on palautettu aktiivisten listalle.",
+        });
+        if (newArchivedStatus) {
+          navigate("/customers");
+        }
+      })
+      .catch((err) => {
+        console.error("Archive toggle failed:", err);
+        toast({
+          title: "Arkistointi epäonnistui",
+          description: err?.message || "Yritä uudelleen tai tarkista verkkoyhteys.",
+          variant: "destructive",
+        });
+      });
   };
   
   const getTimeOfPurchaseBadge = (v?: string) => {
