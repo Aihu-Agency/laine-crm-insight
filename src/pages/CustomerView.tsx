@@ -88,7 +88,7 @@ const CustomerView = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer', id] });
       queryClient.invalidateQueries({ queryKey: ['customer-properties'] });
-      toast({ title: "Property removed" });
+      toast({ title: "Ehdotus poistettu", description: "Asunto säilyy järjestelmässä, ei näy enää tällä asiakkaalla." });
     },
     onError: () => {
       toast({ title: "Failed to remove property", variant: "destructive" });
@@ -212,10 +212,32 @@ const CustomerView = () => {
 
   const handleArchiveToggle = () => {
     const newArchivedStatus = !customerData.archived;
-    updateCustomerMutation.mutate({
-      customerId: id!,
-      data: { archived: newArchivedStatus }
-    });
+    airtableApi.updateCustomer(id!, { archived: newArchivedStatus })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['customer', id] });
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-funnel'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-page'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-all'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-all-navigation'] });
+        toast({
+          title: newArchivedStatus ? "Asiakas arkistoitu" : "Arkistointi peruttu",
+          description: newArchivedStatus
+            ? "Asiakas on piilotettu listoilta. Voit palauttaa hänet milloin tahansa."
+            : "Asiakas on palautettu aktiivisten listalle.",
+        });
+        if (newArchivedStatus) {
+          navigate("/customers");
+        }
+      })
+      .catch((err) => {
+        console.error("Archive toggle failed:", err);
+        toast({
+          title: "Arkistointi epäonnistui",
+          description: err?.message || "Yritä uudelleen tai tarkista verkkoyhteys.",
+          variant: "destructive",
+        });
+      });
   };
   
   const getTimeOfPurchaseBadge = (v?: string) => {
@@ -641,9 +663,10 @@ const CustomerView = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          title="Poista ehdotus tältä asiakkaalta (asunto säilyy tietokannassa)"
                           className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                           onClick={() => {
-                            if (confirm('Remove this property from the customer?')) {
+                            if (confirm('Poistetaanko tämä asunto asiakkaan ehdotuksista?\n\nAsunto säilyy järjestelmässä, ei näy enää tällä asiakkaalla. Uusia ehdotuksia tulee automaattisesti kun n8n-scraper löytää uusia kohteita.')) {
                               unlinkPropertyMutation.mutate({ propertyId: property.id });
                             }
                           }}
