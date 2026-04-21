@@ -88,7 +88,7 @@ const CustomerView = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer', id] });
       queryClient.invalidateQueries({ queryKey: ['customer-properties'] });
-      toast({ title: "Property removed" });
+      toast({ title: "Ehdotus poistettu", description: "Asunto säilyy järjestelmässä, ei näy enää tällä asiakkaalla." });
     },
     onError: () => {
       toast({ title: "Failed to remove property", variant: "destructive" });
