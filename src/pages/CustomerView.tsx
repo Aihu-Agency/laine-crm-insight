@@ -663,9 +663,10 @@ const CustomerView = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          title="Poista ehdotus tältä asiakkaalta (asunto säilyy tietokannassa)"
                           className="absolute top-2 right-2 h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                           onClick={() => {
-                            if (confirm('Remove this property from the customer?')) {
+                            if (confirm('Poistetaanko tämä asunto asiakkaan ehdotuksista?\n\nAsunto säilyy järjestelmässä, ei näy enää tällä asiakkaalla. Uusia ehdotuksia tulee automaattisesti kun n8n-scraper löytää uusia kohteita.')) {
                               unlinkPropertyMutation.mutate({ propertyId: property.id });
                             }
                           }}
