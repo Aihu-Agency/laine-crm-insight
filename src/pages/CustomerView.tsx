@@ -212,7 +212,7 @@ const CustomerView = () => {
 
   const handleArchiveToggle = () => {
     const newArchivedStatus = !customerData.archived;
-    airtableApi.updateCustomer(id!, { archived: newArchivedStatus })
+    airtableApi.toggleCustomerArchived(id!, newArchivedStatus)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['customer', id] });
         queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -232,9 +232,13 @@ const CustomerView = () => {
       })
       .catch((err) => {
         console.error("Archive toggle failed:", err);
+        const rawMsg: string = err?.message || "";
+        const friendly = rawMsg && !rawMsg.includes("non-2xx")
+          ? rawMsg
+          : "Airtable hylkäsi Archived-kentän päivityksen. Tarkista kentän nimi ja oikeudet.";
         toast({
           title: "Arkistointi epäonnistui",
-          description: err?.message || "Yritä uudelleen tai tarkista verkkoyhteys.",
+          description: friendly,
           variant: "destructive",
         });
       });
