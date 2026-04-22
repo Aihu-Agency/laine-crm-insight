@@ -32,7 +32,7 @@ export interface AirtableCustomer {
     'Properties'?: string[]
     'Marketing permission'?: boolean
     'Active Search Date'?: string
-    'Archived'?: boolean
+    'Is Active?'?: boolean | string
   }
   createdTime: string
 }
@@ -211,7 +211,12 @@ export const transformAirtableCustomer = (record: AirtableCustomer): Customer =>
   propertyIds: record.fields['Properties'] || [],
   marketingPermission: record.fields['Marketing permission'],
   activeSearchDate: record.fields['Active Search Date'],
-  archived: record.fields['Archived'] || false,
+  archived: (() => {
+    const activeValue = record.fields['Is Active?']
+    if (typeof activeValue === 'boolean') return !activeValue
+    if (typeof activeValue === 'string') return activeValue.trim().toLowerCase() === 'false'
+    return false
+  })(),
   createdTime: record.createdTime
 })
 
