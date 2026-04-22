@@ -1,71 +1,47 @@
 
-## Korjaussuunnitelma: arkistoinnin virheilmoitus
+## Korjaus: oma Archived-kenttä Airtableen
 
-### Todennäköinen ongelma
-Asuntoehdotusten poisto toimii, joten yleinen PATCH-polku ei ole täysin rikki. Arkistointi kulkee saman `updateCustomer`-reitin kautta, mutta juuri `Archived`-kentän päivitys näyttää kaatuvan Airtablen puolella. Lisäksi frontend näyttää nyt liian geneerisen virheen: `Edge Function returned a non-2xx status code`, joten varsinainen Airtable-syy jää piiloon.
+### Juurisyy
+`Is Active?` on formula joka kertoo onko asiakas aktiivisesti etsimässä asuntoa (Active Search Date viim. 3 kk sisällä). Sitä ei voi kirjoittaa, eikä se semanttisesti vastaa arkistointia. Arkistointi = "piilota asiakas listoilta", joka on eri asia kuin hakuaktiivisuus.
 
-### Mitä korjataan
+### Ratkaisu
+Lisätään Airtableen erillinen `Archived`-checkbox-kenttä ja käytetään sitä.
 
-#### 1) Tee virhesyystä näkyvä oikea tieto
-Päivitä `src/services/airtableApi.ts` niin, että `makeRequest()` purkaa myös non-2xx edge function -vastauksen rungon ja näyttää Airtablen oikean virheen eikä pelkkää geneeristä Supabase-viestiä.
+### Vaihe 1 — Tommi lisää Airtableen
+Customers-tauluun uusi kenttä:
+- **Nimi:** `Archived`
+- **Tyyppi:** Checkbox
+- **Oletus:** ei rastittu
 
-Tavoite:
-- toastiin saadaan esim. `INVALID_VALUE_FOR_COLUMN`, `cannot update field`, `permission denied` tms.
-- debuggaus helpottuu heti ilman arvaamista
+(Valinnainen: jos halutaan että arkistoidut katoavat myös aktiivisten suodattimista jotka käyttävät `Is Active?`-formulaa, formula voidaan myöhemmin päivittää muotoon `IF({Archived}, "false", <nykyinen logiikka>)`. Ei pakollinen — koodissa suodatamme erikseen.)
 
-#### 2) Lisää tarkempi lokitus edge functioniin
-Päivitä `supabase/functions/airtable-proxy/index.ts` niin, että customer PATCH -haara loggaa:
-- customerId
-- lähetetyt kentät
-- Airtablen statuskoodi
-- Airtablen virherunko
+### Vaihe 2 — Koodimuutokset
 
-Tavoite:
-- nähdään varmasti hylkääkö Airtable juuri `Archived`-kentän
-- varmistetaan onko kyse kentän nimestä, kenttätyypistä tai Airtable-oikeuksista
+**`src/services/airtableApi.ts`**
+- `toggleCustomerArchived(id, archived)` → PATCH `{ Archived: archived }`
+- `createCustomer` / `updateCustomer`: poista kaikki `Is Active?` -kirjoitukset (vain luku)
 
-#### 3) Tee arkistoinnista oma suojattu polku
-Päivitä `src/services/airtableApi.ts` lisäämällä erillinen metodi tyyliin `toggleCustomerArchived(id, archived)`.
+**`src/types/airtable.ts`**
+- `AirtableCustomer.fields`: lisää `'Archived'?: boolean`
+- `transformAirtableCustomer`: `archived: record.fields['Archived'] === true` (poista nykyinen `Is Active?`-pohjainen johtaminen)
 
-Tässä metodissa:
-- lähetetään vain `{ Archived: true/false }`
-- ei lähetetä mitään muita customer-kenttiä samalla
-- jos Airtable palauttaa virheen, se heitetään eteenpäin mahdollisimman sellaisenaan
+**`src/pages/CustomerView.tsx`**
+- Päivitä toast-tekstit viittaamaan "arkistointiin", ei "aktiivisuuteen"
+- Säilytä nykyinen UX (navigointi takaisin listaan onnistumisessa)
 
-Tavoite:
-- rajataan ongelma vain yhteen kenttään
-- vältetään sivuvaikutukset yleisestä `updateCustomer()`-mappingista
+**Suodattavat näkymät** (Customers, SalesFunnel, Tasks, Dashboard yms.)
+- Tarkista että `archived === true` -asiakkaat suodatetaan pois oletusnäkymistä — tämä logiikka on jo olemassa, varmistetaan että se lukee uutta kenttää oikein transformin kautta.
 
-#### 4) Kytke CustomerView käyttämään erillistä arkistointimetodia
-Päivitä `src/pages/CustomerView.tsx`:
-- `handleArchiveToggle()` käyttää uutta dedikoitua arkistointimetodia
-- säilytä jo lisätyt cache-invalidoinnit
-- säilytä toastit ja navigointi takaisin listaan onnistumisessa
-- virhetoast näyttää käyttäjälle oikean syyn siistityssä muodossa
-- `console.error` jätetään talteen debuggausta varten
-
-#### 5) Lisää fallback käyttäjäystävälliseen virhetekstiin
-Jos Airtable palauttaa edelleen epäselvän virheen, näytä toastissa:
-- otsikko: `Arkistointi epäonnistui`
-- kuvaus: `Airtable hylkäsi Archived-kentän päivityksen. Tarkistan kentän oikeudet / asetukset.`
-
-Tavoite:
-- Tommi ei näe enää epämääräistä “non-2xx status code” -tekstiä
-
-### Todennäköisin juurisyy, joka varmistetaan toteutuksessa
-Näkyvän koodin perusteella todennäköisimmät vaihtoehdot ovat:
-1. Airtablen `Archived`-kenttä ei hyväksy PATCHia odotetussa muodossa
-2. kentän nimi/tyyppi ei vastaa oletusta
-3. Airtable-tokenilla ei ole oikeutta päivittää kyseistä kenttää
-4. edge function palauttaa kyllä tarkemman virheen, mutta frontend hukkaa sen
+### Vaihe 3 — Verifiointi
+- Arkistointi: toast "Asiakas arkistoitu", asiakas katoaa listalta, edge function -loki näyttää `status: 200` ja `sentFields: { Archived: true }`.
+- Restore: asiakas palaa listalle.
+- `Active Search Date` ja `Is Active?` pysyvät koskemattomina.
 
 ### Muutettavat tiedostot
-- `src/services/airtableApi.ts` — parempi virhepurku + erillinen arkistointimetodi
-- `src/pages/CustomerView.tsx` — käytä dedikoitua arkistointimetodia, pidä nykyinen UX
-- `supabase/functions/airtable-proxy/index.ts` — tarkempi PATCH-lokitus ja virheen välitys
+- `src/services/airtableApi.ts`
+- `src/types/airtable.ts`
+- `src/pages/CustomerView.tsx`
 
-### Lopputulos
-Kun tämä tehdään:
-- arkistointi joko toimii oikein
-- tai jos Airtable estää sen, toast kertoo oikean syyn eikä geneeristä edge function -virhettä
-- samalla jää pysyvämpi, helpommin debuggattava toteutus arkistoinnille
+### Toimintajärjestys
+1. Tommi lisää `Archived`-checkbox-kentän Airtablen Customers-tauluun.
+2. Lovable toteuttaa yllä olevat koodimuutokset.
