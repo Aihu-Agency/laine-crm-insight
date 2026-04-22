@@ -2,7 +2,7 @@ import { Customer, AirtableResponse, AirtableCustomer, transformAirtableCustomer
 import { supabase } from '@/integrations/supabase/client'
 import { normalizeAndValidateAreas } from '@/constants/areas-tree'
 
-const AIRTABLE_ACTIVE_FIELD = 'Is Active?'
+const AIRTABLE_ARCHIVED_FIELD = 'Archived'
 
 class AirtableApiService {
   private async makeRequest(endpoint: string, options: { method?: string; body?: any } = {}) {
@@ -56,11 +56,11 @@ class AirtableApiService {
     try {
       const record: AirtableCustomer = await this.makeRequest(`/customers/${id}`, {
         method: 'PATCH',
-        body: { [AIRTABLE_ACTIVE_FIELD]: !archived },
+        body: { [AIRTABLE_ARCHIVED_FIELD]: archived },
       })
       return transformAirtableCustomer(record)
     } catch (error) {
-      console.error('Error toggling customer active state:', error)
+      console.error('Error toggling customer archived state:', error)
       throw error
     }
   }
@@ -202,7 +202,6 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Customer number': nextCustomerNumber,
         'Active Search Date': customerData.activeSearchDate,
-        [AIRTABLE_ACTIVE_FIELD]: customerData.archived === undefined ? undefined : !customerData.archived,
       };
 
       // Prepare warnings
@@ -353,7 +352,6 @@ class AirtableApiService {
         'Notes': customerData.notes,
         'Customer number': customerData.customerNumber,
         'Active Search Date': customerData.activeSearchDate,
-        [AIRTABLE_ACTIVE_FIELD]: customerData.archived === undefined ? undefined : !customerData.archived,
         'Marketing permission': customerData.marketingPermission,
       };
 

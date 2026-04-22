@@ -235,7 +235,7 @@ const CustomerView = () => {
         const rawMsg: string = err?.message || "";
         const friendly = rawMsg && !rawMsg.includes("non-2xx")
           ? rawMsg
-          : "Airtable hylkäsi asiakkaan aktiivisuustilan päivityksen. Tarkista kentän nimi ja oikeudet.";
+          : "Airtable hylkäsi Archived-kentän päivityksen. Tarkista että kenttä on olemassa Customers-taulussa (checkbox-tyyppi).";
         toast({
           title: "Arkistointi epäonnistui",
           description: friendly,
