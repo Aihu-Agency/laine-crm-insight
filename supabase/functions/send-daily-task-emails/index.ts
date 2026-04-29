@@ -11,6 +11,13 @@ const corsHeaders = {
 const APP_URL = "https://laine-crm-insight.lovable.app";
 const FROM_ADDRESS = "Laine Homes CRM <onboarding@resend.dev>";
 
+// === TEST MODE ===
+// While Resend domain is not yet verified, all emails are routed to TEST_REDIRECT_TO.
+// Each email shows a clearly visible banner explaining who it WOULD have gone to in production.
+// To go live: set TEST_MODE = false and update FROM_ADDRESS to a verified-domain address.
+const TEST_MODE = true;
+const TEST_REDIRECT_TO = "mikko.tuominen+laineresend@aihuagency.com";
+
 interface AirtableAction {
   id: string;
   fields: Record<string, any>;
