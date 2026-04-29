@@ -416,6 +416,8 @@ const Settings = ({
               </CardContent>
             </Card>
 
+            <EmailReminders />
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
               <div>
