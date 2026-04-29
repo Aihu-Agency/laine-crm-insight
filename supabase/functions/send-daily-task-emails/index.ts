@@ -418,7 +418,7 @@ serve(async (req) => {
       const items = grouped.get(sp.fullName.toLowerCase()) || [];
       if (items.length === 0) continue;
 
-      // Idempotency check: skip if already logged as 'sent' today
+      // Idempotency check: skip if already logged as 'sent' today (uses intended recipient = salesperson email, not the redirected test address)
       const { data: existing } = await adminClient
         .from("email_send_log")
         .select("id, status")
@@ -431,11 +431,13 @@ serve(async (req) => {
         continue;
       }
 
-      const subject = `Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
-      const html = buildEmailHtml(sp.firstName, dateText, items);
+      const baseSubject = `Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
+      const subject = TEST_MODE ? `[TESTI → ${sp.firstName}] ${baseSubject}` : baseSubject;
+      const html = buildEmailHtml(sp.firstName, dateText, items, TEST_MODE ? `${sp.fullName} → ${sp.email}` : undefined);
+      const actualRecipient = TEST_MODE ? TEST_REDIRECT_TO : sp.email;
 
       try {
-        await sendResendEmail(sp.email, subject, html, resendApiKey);
+        await sendResendEmail(actualRecipient, subject, html, resendApiKey);
         await adminClient.from("email_send_log").upsert(
           {
             email_type: "daily_tasks",
@@ -443,7 +445,7 @@ serve(async (req) => {
             send_date: todayHelsinki,
             task_count: items.length,
             status: "sent",
-            error_message: null,
+            error_message: TEST_MODE ? `TEST_MODE: redirected to ${TEST_REDIRECT_TO}` : null,
           },
           { onConflict: "email_type,recipient_email,send_date" },
         );
