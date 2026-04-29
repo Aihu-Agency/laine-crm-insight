@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import EmailReminders from "@/components/EmailReminders";
 type UserRow = {
   id: string;
   email: string | null;
@@ -414,6 +415,8 @@ const Settings = ({
                 
               </CardContent>
             </Card>
+
+            <EmailReminders />
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_send_log: {
+        Row: {
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          send_date: string
+          status: string
+          task_count: number
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          send_date: string
+          status: string
+          task_count?: number
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          send_date?: string
+          status?: string
+          task_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
