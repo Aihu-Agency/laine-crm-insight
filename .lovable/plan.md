@@ -1,59 +1,47 @@
 ## Tavoite
 
-Tuoda puuttuvat Mailchimp-asiakkaat Airtableen oikealla myyjällä ja puhelinnumerolla, käyttämällä olemassa olevaa `import-mailchimp` -edge functionia. Ei koodimuutoksia.
+Päivittää Airtableen juuri importoiduille Mailchimp-asiakkaille puuttuvat sukunimet (ja samalla siistiä etunimet) käyttämällä Pipedrive-CSV:tä lähteenä emailin perusteella. Ei kosketa muita Airtable-kenttiä eikä muita asiakkaita.
 
-## Datan tila (varmistettu lataamillasi tiedostoilla)
+## Lähtötilanne
 
-- Pipedrive: 7 755 riviä, 7 400 unique sähköpostia
-- Mailchimp: 3 176 tilaajaa
-- 3 135 sähköpostia löytyy molemmista (98,7 % matchaa)
-- 41 Mailchimpin tilaajaa puuttuu Pipedrivestä → menevät Sales Teamille
-- Kaikki neljä Pasin mainitsemaa asiakasta löytyivät Pipedrivestä omistajatietoineen
+- Pipedrive-CSV: 7 755 riviä, 7 395 emailia, **5 091 riviä joissa on sekä email että sukunimi** → tämä on korjauspotentiaali
+- Juuri importatuissa Mailchimp-asiakkaissa ~94 % puuttui sukunimi (esim. Jukka Kilpi tuli muodossa "Jukka")
+- Asiakas on löydettävissä Airtablesta emailin perusteella
 
-## Vaiheet
+## Toteutus
 
-### Vaihe 1 — Yhdistä CSV:t (kertaluonteinen Python-skripti)
+### Vaihe 1 — Kertaluonteinen Node-skripti (ajetaan sandboxissa, ei lisätä koodikantaan)
 
-Skripti `/tmp/merge.py`:
-1. Lukee `pipedrive.csv` ja `mailchimp.csv`
-2. Indeksoi Pipedriven rivit kaikkien kolmen email-sarakkeen perusteella (case-insensitive)
-3. Käy läpi jokaisen Mailchimp-rivin ja lisää:
-   - `Phone Number` ← Pipedriven mobiili → koti → työ (ensimmäinen löytyvä), siivottuna ('+'-merkki säilytetään, etu-`'` poistetaan)
-   - `Sales_Rep` ← Pipedriven `Person - Owner` (jos löytyy match)
-   - `Match_Method` ← `no_match` (jotta `onlyNewLeads=true` tuo rivin)
-4. Tallentaa `/mnt/documents/mailchimp_merged.csv`
-5. Tulostaa raportin: kuinka moni sai Sales_Repin, jakauma myyjittäin, kuinka monta menee Sales Teamille
+Skripti tekee:
 
-### Vaihe 2 — Sinä lataat CSV:n importista
+1. Lukee Pipedrive-CSV:n ja rakentaa hakemiston:
+   `email (lowercase) → { firstName, lastName }` kaikille Pipedrive-riveille joilla on sekä email että sukunimi
+2. Hakee Airtablesta kaikki Customers-rivit jotka täyttävät:
+   - On email
+   - **Last name on tyhjä** (eli vain ne joita pitää korjata)
+3. Jokaiselle riville:
+   - Etsii emailin Pipedrive-hakemistosta
+   - Jos löytyy → päivittää Airtable-rivin: `First name` ja `Last name` Pipedriven mukaisiksi
+   - Jos ei löydy → ohitetaan (jää käsin korjattavaksi tai myöhempään)
+4. Käyttää Airtablen batch-PATCH-rajapintaa (10 riviä / pyyntö, 200 ms tauko)
+5. Tulostaa raportin: kuinka moni päivitettiin, kuinka moni jäi ilman matchia, lista käsin korjattavista
 
-Settings → Import Clients (Mailchimp) -näkymässä:
-- Lataa `mailchimp_merged.csv`
-- `skipDuplicates=true` (oletus) → 3 135 jo Airtablessa olevaa skipataan
-- `onlyNewLeads=true` (oletus) → vain uudet tuodaan
+Skripti käyttää sandboxissa olevia secrettejä `AIRTABLE_API_KEY` ja `AIRTABLE_BASE_ID` (jo konfiguroitu).
 
-Tulos: ainoastaan ne Mailchimp-tilaajat joita ei vielä ole Airtablessa lisätään, ja ne saavat Pipedriven mukaisen myyjän (tai Sales Teamin jos myyjä ei ole `SALES_REP_MAP`-taulussa tai puuttuu kokonaan).
+### Vaihe 2 — Raportti
 
-### Vaihe 3 — Jatkotoimet importin jälkeen
+Tuotan `/mnt/documents/lastname_fix_report.csv`:n jossa kaikki ne emailit joille **ei** löytynyt sukunimeä Pipedrivestä → voit käydä ne läpi käsin (ne ovat puhtaita Mailchimp-tilaajia ilman Pipedrive-historiaa).
 
-- Tarkista Customers-näkymästä että neljä mainittua asiakasta (Mika Palmu, Jukka Kilpi, Karoliina Konola, Soili Lehtiniemi) ovat tulleet
-- Sales Teamille päätyneet voi jakaa myöhemmin käsin tarpeen mukaan
+## Turvallisuus
 
-## Tekninen yhteenveto
-
-```text
-pipedrive.csv (7755)  ─┐
-                       ├──> merge.py ──> mailchimp_merged.csv (3176 riviä)
-mailchimp.csv (3176)  ─┘                  - Sales_Rep + Phone Pipedrivestä
-                                          - Match_Method = no_match
-                                          
-                              ────> import-mailchimp edge function
-                                    - skipDuplicates → vain uudet tuodaan
-                                    - oikea myyjä SALES_REP_MAP:n mukaan
-                                    - tuntemattomat omistajat → Sales Team
-```
-
-`SALES_REP_MAP`-taulua ei muuteta: Kari Hakuli, Päivi Siggberg, Joonas Nurmela ym. menevät Sales Teamille (sinun päätös).
+- Päivitetään VAIN niitä rivejä joilla `Last name` on tyhjä → ei voi rikkoa olemassa olevia oikeita sukunimiä
+- Päivitetään VAIN `First name` ja `Last name` -kentät → muut tiedot (myyjä, puhelin, notes) pysyvät koskemattomina
+- Ei luoda tai poisteta yhtään riviä
 
 ## Mitä tapahtuu hyväksynnän jälkeen
 
-Ajan skriptin, tuotan `mailchimp_merged.csv`-tiedoston `presentation-artifact`-tagina ladattavaksi, ja annan tarkan raportin: montako uutta asiakasta löytyy, jakauma myyjittäin, ja vahvistus että neljä mainittua asiakasta ovat mukana oikealla myyjällä.
+1. Ajan skriptin sandboxissa
+2. Annan raportin: X päivitettyä, Y ilman matchia
+3. Toimitan käsin-korjattavien CSV:n `presentation-artifact`-tagina
+
+Ei koodimuutoksia projektiin. Ei migraatioita. Ei edge function -muutoksia.
