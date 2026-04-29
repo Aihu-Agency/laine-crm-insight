@@ -85,11 +85,16 @@ async function fetchAllPages(table: string, query: string, token: string, baseId
   return records;
 }
 
-function buildEmailHtml(salespersonFirstName: string, dateText: string, items: Array<{
-  description: string;
-  customerName: string;
-  customerAirtableId: string;
-}>): string {
+function buildEmailHtml(
+  salespersonFirstName: string,
+  dateText: string,
+  items: Array<{
+    description: string;
+    customerName: string;
+    customerAirtableId: string;
+  }>,
+  intendedRecipient?: string,
+): string {
   const taskListHtml = items
     .map((it) => {
       const desc = (it.description || "(ei kuvausta)").replace(/</g, "&lt;");
@@ -109,6 +114,17 @@ function buildEmailHtml(salespersonFirstName: string, dateText: string, items: A
     })
     .join("");
 
+  const testBanner = TEST_MODE && intendedRecipient
+    ? `
+          <tr>
+            <td style="background:#fef3c7; border-bottom:2px solid #f59e0b; padding:14px 32px; color:#78350f; font-size:13px;">
+              <strong>⚠️ TESTITILA</strong> — Tuotannossa tämä meili olisi lähetetty:
+              <strong>${(salespersonFirstName || "").replace(/</g, "&lt;")}</strong>
+              (<code style="background:#fde68a; padding:1px 5px; border-radius:3px;">${intendedRecipient.replace(/</g, "&lt;")}</code>)
+            </td>
+          </tr>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -127,6 +143,7 @@ function buildEmailHtml(salespersonFirstName: string, dateText: string, items: A
               <p style="margin:4px 0 0 0; color:#cbd5e1; font-size:14px;">Päivän tehtävät — ${dateText}</p>
             </td>
           </tr>
+          ${testBanner}
           <tr>
             <td style="padding: 32px;">
               <p style="margin:0 0 16px 0; font-size:16px;">Hei ${salespersonFirstName.replace(/</g, "&lt;")},</p>
