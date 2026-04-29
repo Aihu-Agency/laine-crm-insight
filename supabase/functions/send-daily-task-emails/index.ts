@@ -377,22 +377,19 @@ serve(async (req) => {
     const summary: Array<{ recipient: string; status: string; count: number; error?: string }> = [];
 
     if (mode === "test") {
-      // Test mode: send ONE email to the admin with whatever the first non-empty bucket contains, or sample data
-      const recipient = testRecipient || adminUserEmail;
-      if (!recipient) {
-        return new Response(JSON.stringify({ error: "No recipient for test" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      // Pick first non-empty bucket OR fall back to first 3 actions globally OR sample
+      // Test mode: send ONE email to the admin (or TEST_REDIRECT_TO when in test mode) with the first non-empty bucket or sample data
+      const intendedRecipient = testRecipient || adminUserEmail || "admin@example.com";
+      const actualRecipient = TEST_MODE ? TEST_REDIRECT_TO : intendedRecipient;
+      // Pick first non-empty bucket OR fall back to sample
       let items: TaskItem[] = [];
       let firstName = "Testi";
+      let intendedFullName = intendedRecipient;
       for (const sp of salespeople) {
         const bucket = grouped.get(sp.fullName.toLowerCase()) || [];
         if (bucket.length > 0) {
           items = bucket;
           firstName = sp.firstName;
+          intendedFullName = sp.fullName;
           break;
         }
       }
@@ -402,15 +399,15 @@ serve(async (req) => {
         ];
       }
       const subject = `[TESTI] Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
-      const html = buildEmailHtml(firstName, dateText, items);
+      const html = buildEmailHtml(firstName, dateText, items, TEST_MODE ? `${intendedFullName} → ${intendedRecipient}` : undefined);
       try {
-        await sendResendEmail(recipient, subject, html, resendApiKey);
-        summary.push({ recipient, status: "sent", count: items.length });
+        await sendResendEmail(actualRecipient, subject, html, resendApiKey);
+        summary.push({ recipient: actualRecipient, status: "sent", count: items.length });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        summary.push({ recipient, status: "failed", count: items.length, error: msg });
+        summary.push({ recipient: actualRecipient, status: "failed", count: items.length, error: msg });
       }
-      return new Response(JSON.stringify({ mode: "test", date: todayHelsinki, summary }), {
+      return new Response(JSON.stringify({ mode: "test", date: todayHelsinki, test_mode: TEST_MODE, summary }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
