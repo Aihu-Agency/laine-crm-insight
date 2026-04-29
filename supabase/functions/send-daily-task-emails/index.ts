@@ -11,6 +11,13 @@ const corsHeaders = {
 const APP_URL = "https://laine-crm-insight.lovable.app";
 const FROM_ADDRESS = "Laine Homes CRM <onboarding@resend.dev>";
 
+// === TEST MODE ===
+// While Resend domain is not yet verified, all emails are routed to TEST_REDIRECT_TO.
+// Each email shows a clearly visible banner explaining who it WOULD have gone to in production.
+// To go live: set TEST_MODE = false and update FROM_ADDRESS to a verified-domain address.
+const TEST_MODE = true;
+const TEST_REDIRECT_TO = "mikko.tuominen+laineresend@aihuagency.com";
+
 interface AirtableAction {
   id: string;
   fields: Record<string, any>;
@@ -78,11 +85,16 @@ async function fetchAllPages(table: string, query: string, token: string, baseId
   return records;
 }
 
-function buildEmailHtml(salespersonFirstName: string, dateText: string, items: Array<{
-  description: string;
-  customerName: string;
-  customerAirtableId: string;
-}>): string {
+function buildEmailHtml(
+  salespersonFirstName: string,
+  dateText: string,
+  items: Array<{
+    description: string;
+    customerName: string;
+    customerAirtableId: string;
+  }>,
+  intendedRecipient?: string,
+): string {
   const taskListHtml = items
     .map((it) => {
       const desc = (it.description || "(ei kuvausta)").replace(/</g, "&lt;");
@@ -102,6 +114,17 @@ function buildEmailHtml(salespersonFirstName: string, dateText: string, items: A
     })
     .join("");
 
+  const testBanner = TEST_MODE && intendedRecipient
+    ? `
+          <tr>
+            <td style="background:#fef3c7; border-bottom:2px solid #f59e0b; padding:14px 32px; color:#78350f; font-size:13px;">
+              <strong>⚠️ TESTITILA</strong> — Tuotannossa tämä meili olisi lähetetty:
+              <strong>${(salespersonFirstName || "").replace(/</g, "&lt;")}</strong>
+              (<code style="background:#fde68a; padding:1px 5px; border-radius:3px;">${intendedRecipient.replace(/</g, "&lt;")}</code>)
+            </td>
+          </tr>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -120,6 +143,7 @@ function buildEmailHtml(salespersonFirstName: string, dateText: string, items: A
               <p style="margin:4px 0 0 0; color:#cbd5e1; font-size:14px;">Päivän tehtävät — ${dateText}</p>
             </td>
           </tr>
+          ${testBanner}
           <tr>
             <td style="padding: 32px;">
               <p style="margin:0 0 16px 0; font-size:16px;">Hei ${salespersonFirstName.replace(/</g, "&lt;")},</p>
@@ -353,22 +377,19 @@ serve(async (req) => {
     const summary: Array<{ recipient: string; status: string; count: number; error?: string }> = [];
 
     if (mode === "test") {
-      // Test mode: send ONE email to the admin with whatever the first non-empty bucket contains, or sample data
-      const recipient = testRecipient || adminUserEmail;
-      if (!recipient) {
-        return new Response(JSON.stringify({ error: "No recipient for test" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      // Pick first non-empty bucket OR fall back to first 3 actions globally OR sample
+      // Test mode: send ONE email to the admin (or TEST_REDIRECT_TO when in test mode) with the first non-empty bucket or sample data
+      const intendedRecipient = testRecipient || adminUserEmail || "admin@example.com";
+      const actualRecipient = TEST_MODE ? TEST_REDIRECT_TO : intendedRecipient;
+      // Pick first non-empty bucket OR fall back to sample
       let items: TaskItem[] = [];
       let firstName = "Testi";
+      let intendedFullName = intendedRecipient;
       for (const sp of salespeople) {
         const bucket = grouped.get(sp.fullName.toLowerCase()) || [];
         if (bucket.length > 0) {
           items = bucket;
           firstName = sp.firstName;
+          intendedFullName = sp.fullName;
           break;
         }
       }
@@ -378,15 +399,15 @@ serve(async (req) => {
         ];
       }
       const subject = `[TESTI] Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
-      const html = buildEmailHtml(firstName, dateText, items);
+      const html = buildEmailHtml(firstName, dateText, items, TEST_MODE ? `${intendedFullName} → ${intendedRecipient}` : undefined);
       try {
-        await sendResendEmail(recipient, subject, html, resendApiKey);
-        summary.push({ recipient, status: "sent", count: items.length });
+        await sendResendEmail(actualRecipient, subject, html, resendApiKey);
+        summary.push({ recipient: actualRecipient, status: "sent", count: items.length });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        summary.push({ recipient, status: "failed", count: items.length, error: msg });
+        summary.push({ recipient: actualRecipient, status: "failed", count: items.length, error: msg });
       }
-      return new Response(JSON.stringify({ mode: "test", date: todayHelsinki, summary }), {
+      return new Response(JSON.stringify({ mode: "test", date: todayHelsinki, test_mode: TEST_MODE, summary }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -397,7 +418,7 @@ serve(async (req) => {
       const items = grouped.get(sp.fullName.toLowerCase()) || [];
       if (items.length === 0) continue;
 
-      // Idempotency check: skip if already logged as 'sent' today
+      // Idempotency check: skip if already logged as 'sent' today (uses intended recipient = salesperson email, not the redirected test address)
       const { data: existing } = await adminClient
         .from("email_send_log")
         .select("id, status")
@@ -410,11 +431,13 @@ serve(async (req) => {
         continue;
       }
 
-      const subject = `Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
-      const html = buildEmailHtml(sp.firstName, dateText, items);
+      const baseSubject = `Päivän tehtävät — ${dateText} (${items.length} ${items.length === 1 ? "tehtävä" : "tehtävää"})`;
+      const subject = TEST_MODE ? `[TESTI → ${sp.firstName}] ${baseSubject}` : baseSubject;
+      const html = buildEmailHtml(sp.firstName, dateText, items, TEST_MODE ? `${sp.fullName} → ${sp.email}` : undefined);
+      const actualRecipient = TEST_MODE ? TEST_REDIRECT_TO : sp.email;
 
       try {
-        await sendResendEmail(sp.email, subject, html, resendApiKey);
+        await sendResendEmail(actualRecipient, subject, html, resendApiKey);
         await adminClient.from("email_send_log").upsert(
           {
             email_type: "daily_tasks",
@@ -422,7 +445,7 @@ serve(async (req) => {
             send_date: todayHelsinki,
             task_count: items.length,
             status: "sent",
-            error_message: null,
+            error_message: TEST_MODE ? `TEST_MODE: redirected to ${TEST_REDIRECT_TO}` : null,
           },
           { onConflict: "email_type,recipient_email,send_date" },
         );
