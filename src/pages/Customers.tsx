@@ -18,12 +18,13 @@ const Customers = ({ onLogout }: CustomersProps) => {
   const [filters, setFilters] = usePersistedFilters<CustomerFiltersValue>('customers-filters', DEFAULT_FILTERS);
   const [resultsCount, setResultsCount] = useState<number>(0);
   
-  // Prefetch all customers for faster navigation in CustomerView
-  useQuery({
+  // Prefetch all customers for faster navigation in CustomerView + total count
+  const { data: allCustomers } = useQuery({
     queryKey: ['customers-all-navigation'],
     queryFn: () => airtableApi.getAllCustomers(),
     staleTime: 5 * 60 * 1000,
   });
+  const totalCount = allCustomers?.length;
   
   return (
     <div className="min-h-screen bg-laine-grey">
@@ -32,7 +33,12 @@ const Customers = ({ onLogout }: CustomersProps) => {
       <div className="container mx-auto p-6">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
+              <span className="text-sm text-gray-500">
+                {totalCount !== undefined ? `${totalCount} total` : 'Loading…'}
+              </span>
+            </div>
             <Link to="/customers/add" className="bg-laine-mint hover:bg-laine-mint/90 text-gray-800 px-4 py-2 rounded font-medium">
               + Add new customer
             </Link>

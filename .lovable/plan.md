@@ -1,106 +1,88 @@
-## Tavoite
 
-Joka arkiaamu klo 07:00 (Suomen aikaa) jokaiselle myyjälle lähtee meili, joka listaa **sen päivän tehtävät** (Customer Actions joiden `Action Date` = tänään ja `Completed` ≠ "Done"). Jos myyjällä ei ole tehtäviä, meiliä ei lähetetä.
+# Plan — 4 päivitystä
 
-## Lähetystapa
+## 1. Sähköpostit tuotantoon (DNS verifioitu)
 
-**Lovable Emails** — sisäänrakennettu Lovable-alustan transaktiomeili-infra:
-- Ei vaadi erillistä Resend-tiliä, konnektoria tai API-avainta
-- Toimii heti Lovablen testidomainilla
-- Oma domain (esim. `crm@lainehomes.es`) voidaan lisätä myöhemmin DNS-verifioinnilla yhdellä klikkauksella
+**Tiedosto:** `supabase/functions/send-daily-task-emails/index.ts`
 
-## Toteutusvaiheet
+Muutokset:
+- `TEST_MODE = false`
+- `FROM_ADDRESS = "Laine Homes CRM <noreply@lainehomes.es>"` (tai mikä lähetysosoite haluat — vahvistetaan kysymyksellä)
+- Poistetaan `[TESTI → ...]` -etuliite aiheesta ja `⚠️ TESTITILA` -banneri (logiikka jää koodiin TEST_MODE-flagilla, mutta tuotannossa pois käytöstä)
+- `email_send_log.error_message` ei enää sisällä "TEST_MODE: redirected to..." -merkintää onnistuneille lähetyksille
 
-### 1. Lovable Emails -infran scaffoldaus
-Käytetään `scaffold_transactional_email`-työkalua, joka:
-- Luo valmiin transaktiomeili-edge-functionin pohjan (lähetyslogiikka + secretit)
-- Konfiguroi Lovable Emails -infrastruktuurin projektille
+Verifioidaan domain edge function deploy:n jälkeen lähettämällä yksi testimeili Settings-sivun napilla → menee oikealle myyjälle.
 
-### 2. Tietokantataulu `email_send_log` (idempotenssi)
+## 2. "Enable marketing" -asiakkaiden vienti Mailchimpiin
 
-```text
-- id (uuid, PK)
-- email_type (text, esim. 'daily_tasks')
-- recipient_email (text)
-- send_date (date, Europe/Helsinki päivä)
-- task_count (int)
-- status (text: 'sent' | 'failed' | 'skipped')
-- error_message (text, nullable)
-- created_at (timestamptz)
-- UNIQUE (email_type, recipient_email, send_date)
+**Tarkennus tarvitaan** — koodissa ei tällä hetkellä ole **mitään** push-synkronointia Airtablesta Mailchimpiin. Olemassa on vain:
+- `import-mailchimp` edge function: lukee CSV:n Mailchimpistä → vie Airtableen
+- `Marketing permission` -kenttä Airtablen Customers-taulussa (asetetaan `true` Mailchimp-importissa)
+
+Eli tällä hetkellä asiakkaat, joilla on `Marketing permission = true` Airtablessa, **eivät** päivity automaattisesti Mailchimpin listalle.
+
+Mahdolliset tulkinnat siitä mitä haluat:
+- **A)** Rakennetaan **uusi sync**: Airtable → Mailchimp audience (kun Customer luodaan/päivitetään ja `Marketing permission = true`, lisätään/päivitetään Mailchimp subscriber)
+- **B)** Vain **manuaalinen export-nappi** Settings-sivulle: "Vie kaikki Marketing permission = true asiakkaat Mailchimpiin" (yksi kertaluonteinen synkka)
+- **C)** Tarkoitatko että haluat vain **tarkistaa raportin** nykyisistä asiakkaista joilla lippu on päällä (esim. listanäkymä admin-sivulle), ilman varsinaista Mailchimp-pushia
+
+→ Kysytään tämä `ask_questions`-työkalulla ennen toteutusta. Vaatii myös Mailchimp API -avaimen + audience ID:n setupin.
+
+## 3. Etunimi+sukunimi -haku ei toimi
+
+**Tiedosto:** `src/components/CustomerList.tsx` (rivi `buildFilterFormula`)
+
+**Ongelma:** nykyinen formula etsii hakusanaa **erikseen** `{First name}`- ja `{Last name}` -kentistä. Haku "Pasi Laine" ei löydä mitään koska kumpikaan kenttä yksin ei sisällä koko merkkijonoa.
+
+**Korjaus:** Lisätään yhdistettyyn nimeen kohdistuva haku:
+```
+OR(
+  FIND(LOWER("x"), LOWER({First name})),
+  FIND(LOWER("x"), LOWER({Last name})),
+  FIND(LOWER("x"), LOWER({First name} & " " & {Last name}))
+)
+```
+Tämä mätsää sekä erilliset nimet että koko nimen.
+
+## 4. Total count "Customers"-näkymään
+
+**Tiedosto:** `src/pages/Customers.tsx`
+
+Nykyään näytetään vain `{resultsCount} customers shown` (= **nykyisen sivun** määrä, max 100). Käyttäjä haluaa **kokonaismäärän** koko tietokannasta.
+
+**Toteutus:** Hyödynnetään olemassa olevaa `customers-all-navigation`-prefetch-queryä (joka hakee jo kaikki asiakkaat navigointia varten):
+
+```tsx
+const { data: allCustomers } = useQuery({
+  queryKey: ['customers-all-navigation'],
+  queryFn: () => airtableApi.getAllCustomers(),
+  staleTime: 5 * 60 * 1000,
+});
+
+// otsikon viereen pieni teksti:
+<h1>Customers <span className="text-sm font-normal text-gray-500">
+  ({allCustomers?.length ?? '...'} total)
+</span></h1>
 ```
 
-RLS: vain admin näkee. Estää tuplameilien lähetyksen jos cron triggeröityy kahdesti aikavyöhykevaihdoksen takia.
-
-### 3. Edge function: `send-daily-task-emails`
-
-Logiikka:
-1. Tunnistaa kutsun: cron (header `x-cron-secret`) tai admin-käyttäjä (JWT + `has_role('admin')`)
-2. Hakee myyjät Supabasesta (`profiles` + `auth.users` → nimi + sähköposti)
-3. Hakee Airtablesta Customer Actions joissa `Action Date` = tänään (Helsinki) ja `Completed` ≠ "Done"
-4. Ryhmittelee tehtävät myyjittäin (case-insensitive nimimätsäys, kuten muuallakin järjestelmässä)
-5. Tarkistaa `email_send_log` → ohittaa jos tämän päivän meili jo lähetetty
-6. Lähettää meilin Lovable Emailsin kautta jokaiselle myyjälle ≥1 tehtävällä
-7. Logittaa jokaisen lähetyksen `email_send_log`-tauluun
-
-Tukee myös `?test=true&recipient=email@example.com` -parametria → lähettää vain testimeilin admin-käyttäjälle.
-
-### 4. Sähköpostin sisältö (suomeksi, brändi: deep navy + Mediterranean accent)
-
-```text
-Aihe: Päivän tehtävät — keskiviikko 29.4.2026 (5 tehtävää)
-
-Hei Minna,
-
-Sinulla on tänään 5 tehtävää CRM:ssä:
-
-• Soita: Matti Meikäläinen
-  → "Sovittu seuraava puhelu — kysy tarjouksen tilannetta"
-
-• Lähetä esitys: Anna Virtanen
-  → "Costa del Sol -kohteet, 3mh"
-
-[Avaa CRM →]
+Ei lisäkutsuja Airtableen — käyttää jo cachetettua dataa.
 
 ---
-Tämä on automaattinen aamumuistutus.
-```
 
-Jokainen tehtävärivi on klikattava linkki suoraan asiakkaan näkymään (`/customer/:id`).
+## Tekninen yhteenveto muutoksista
 
-### 5. Cron-aikataulu (pg_cron + pg_net)
+| # | Tiedosto | Muutos |
+|---|----------|--------|
+| 1 | `supabase/functions/send-daily-task-emails/index.ts` | `TEST_MODE = false`, päivitä `FROM_ADDRESS` |
+| 3 | `src/components/CustomerList.tsx` | Lisää koko-nimi-haku `buildFilterFormula`-funktioon |
+| 4 | `src/pages/Customers.tsx` | Näytä total count otsikon vieressä |
+| 2 | (odottaa selvennystä) | Mailchimp-sync — riippuu valinnasta A/B/C |
 
-- Ajetaan klo **04:00 ja 05:00 UTC, ma–pe** (kattaa kesä- ja talviajan → Helsinki-aikaan 07:00)
-- `email_send_log`-taulun UNIQUE-rajoite estää tuplalähetykset
-- Cron-kutsu lähettää `x-cron-secret`-headerin (uusi secret `CRON_SECRET`), jolla edge function tunnistaa cronin
+---
 
-Cron-SQL ajetaan insert-toolilla (sisältää projektikohtaisen URL:n + secretin).
+## Avoimet kysymykset
 
-### 6. Settings-näkymän laajennus (admin)
+Ennen toteutusta tarvitaan vastaukset:
 
-Lisätään Settings-sivulle uusi osio "Sähköpostimuistutukset":
-- Viimeisten 7 päivän lähetyshistoria taulukkona (vastaanottaja, päivä, tehtävämäärä, tila)
-- "Lähetä testimeili itselleni nyt" -nappi → kutsuu edge functionia testitilassa, vahvistaa että meili tulee perille ja näyttää oikealta
-
-## Mitä EI tehdä
-
-- Ei myöhästyneitä tai tulevia tehtäviä — vain päivän
-- Ei viikonloppuisin
-- Ei myyjille joilla 0 tehtävää
-- Ei vielä omaa domainia — Lovable Emails -testidomain riittää aluksi
-- Ei käyttäjäkohtaista on/off-asetusta (lisätään myöhemmin tarpeen mukaan)
-
-## Tekniset yksityiskohdat
-
-**Uudet/muokatut tiedostot:**
-- `supabase/functions/send-daily-task-emails/index.ts` (uusi)
-- `supabase/migrations/...` — `email_send_log`-taulu + RLS
-- `src/pages/Settings.tsx` — uusi "Sähköpostimuistutukset"-osio
-- `src/components/EmailLogTable.tsx` (uusi)
-
-**Uudet secretit:**
-- `CRON_SECRET` (satunnainen merkkijono cron-tunnistukseen)
-- Lovable Emails -secretit tulevat scaffoldista automaattisesti
-
-**Tarkistus käyttöönoton jälkeen:**
-Lähetät testimeilin Settings-sivulta → varmistamme että meili tulee perille ja sisältö näyttää hyvältä. Sen jälkeen cron hoitaa loput automaattisesti seuraavasta arkiaamusta alkaen.
+1. **Lähetysosoite tuotannossa** — `noreply@lainehomes.es`, `crm@lainehomes.es` vai joku muu?
+2. **Mailchimp-toiminto** — tulkinta A, B vai C yllä?

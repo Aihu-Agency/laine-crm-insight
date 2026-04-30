@@ -20,7 +20,8 @@ const CustomerList = ({ filters, onCountChange }: { filters: CustomerFiltersValu
     const conditions: string[] = [];
     
     if (filters.search) {
-      conditions.push(`OR(FIND(LOWER("${filters.search}"), LOWER({First name})), FIND(LOWER("${filters.search}"), LOWER({Last name})))`);
+      const s = filters.search.replace(/"/g, '\\"');
+      conditions.push(`OR(FIND(LOWER("${s}"), LOWER({First name})), FIND(LOWER("${s}"), LOWER({Last name})), FIND(LOWER("${s}"), LOWER({First name} & " " & {Last name})))`);
     }
     if (filters.location.length > 0) {
       if (filters.location.length === 1) {
